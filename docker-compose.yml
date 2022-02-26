@@ -1,0 +1,23 @@
+version: "3.8"
+services:
+    mongoDB:
+        container_name: mongoDB
+        hostname: mongo-database
+        image: mongo
+        volumes:
+            - ./database/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+        ports:
+            - "27017:27017"
+        restart: always
+    neatmon-api:
+        container_name: api
+        hostname: api-server
+        build: ./server
+        ports:
+            - "5000:5000"
+        restart: always
+        depends_on:
+            - "mongoDB"
+volumes:
+    database: 
+    server:
