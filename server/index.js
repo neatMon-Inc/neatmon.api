@@ -5,11 +5,13 @@
     Date: 2022-02-25
 */
 
-require('dotenv').config();
+require('dotenv').config(); // Get env variables
+const axios = require("axios"); // HTTP Client
 const Express = require("express");
 const BodyParser = require("body-parser");
 const MongoClient = require("mongodb").MongoClient;
 const ObjectId = require("mongodb").ObjectID;
+const fetch = require('isomorphic-fetch')
 
 console.log("Setting up app.  Getting environment variables");
 CONNECTION_URL = process.env.MONGO_DATABASE_URI;
@@ -24,9 +26,9 @@ CONNECTION_URL = "mongodb://" + MONGO_DATABASE_EDITOR_USER + ":" + MONGO_DATABAS
 console.log("DB string " + CONNECTION_URL);
 
 var app = Express();
-
-app.use(BodyParser.json());
 app.use(BodyParser.urlencoded({ extended: true }));
+app.use(BodyParser.json());
+app.use(BodyParser.raw());
 
 var database, collection;
 
@@ -34,73 +36,79 @@ var database, collection;
 //// POST METHODS                                   //////
 //////////////////////////////////////////////////////////
 app.post("/api/device/:id", (request, response) => {
-    // Test insert with random data
-    var now = new Date();
-    m_date = new Date(now.toISOString()); // For some reason this extra step is required.
-    var m_guid = "437870dc-0984-492f-91c4-42c007621de6";
-    const doc = 
+
+
+    m_guid = request.body.GUID;
+    if (m_guid != request.params.id) return response.status(500).send("Bad request"); //fail
+
+
+    m_hw_id = request.body.HW;
+    m_fw_id = request.body.FW;
+    m_vals_1 = request.body.VAL.SM6;
+    m_vals_2 = request.body.VAL.SM12;
+    m_vals_3 = request.body.VAL.SM18;
+    m_vals_4 = request.body.VAL.SM24;
+    m_vals_5 = request.body.VAL.SM36;
+    m_vals_6 = request.body.VAL.SM48;
+    m_vals_batt = request.body.VAL.BATT;
+    m_vals_signal = request.body.VAL.DB;
+
+
+    // for (var ikey of Object.keys(request.body.VAL))
+    // {
+    //     console.log(ikey + "->" + request.body.VAL[ikey]);
+
+    // }
+
+    // Use the server time for now
+    var now = new Date(); // Get the date/time
+    var m_date = new Date(now.toISOString()); // Convert to ISO format
+
+    const doc =
     {
         "GUID": m_guid,
-        "HW": "2.02",
-        "FW": "1.12",
-        "VAL": 
-        {
-            "SM6": [
-                {
-                    "SM": "0.00",
-                    "ST": "17.7",
-                    "SS": "2"
-                }
-            ],
-            "SM12": [
-                {
-                    "SM": "0.00",
-                    "ST": "17.7",
-                    "SS": "2"
-                }
-            ],
-            "SM18": [
-                {
-                    "SM": "0.00",
-                    "ST": "17.7",
-                    "SS": "2"
-                }
-            ],
-            "SM24": [
-                {
-                    "SM": "0.00",
-                    "ST": "17.7",
-                    "SS": "2"
-                }
-            ],
-            "SM36": [
-                {
-                    "SM": "0.00",
-                    "ST": "17.7",
-                    "SS": "2"
-                }
-            ],
-            "SM48": [
-                {
-                    "SM": "0.00",
-                    "ST": "17.7",
-                    "SS": "2"
-                }
-            ],
-            "BATT": "5.00",
-            "DB": "-79",
+        "HW": m_hw_id,
+        "FW": m_fw_id,
+        "VAL": {
+            "SM6": m_vals_1,
+            "SM12": m_vals_2,
+            "SM18": m_vals_3,
+            "SM24": m_vals_4,
+            "SM36": m_vals_5,
+            "SM48": m_vals_6,
+            "BATT": m_vals_batt,
+            "DB": m_vals_signal,
             "Date": m_date
         }
     }
-    // console.log(doc);
-    // response.send(doc);
 
-    collection.insert(doc, (error, result) => {
+    var remotePushResponse;
+    // HTTP push to remote
+    axios
+        .post('https://data-streams-api.azurewebsites.net/stream', doc)
+        .then(axios_res => {
+            console.log(`statusCode: ${axios_res.status}`);
+            var responseText = axios_res.data;
+            console.log(responseText);
+            // console.log(Object.keys(axios_res)); // list the keys of the response
+            remotePushResponse = "Remote res ID: " + responseText;
+            // return response.send(axios_res.status);
+        })
+        .catch(error => {
+            console.error(error);
+            return response.send(error);
+        });
+
+    // Insert adds the _id to the doc.
+    collection.insertOne(doc, (error, result) => {
         if (error) {
             return response.status(500).send(error);
         }
-        response.send(result);
+        console.log("Insert db _id:" + result.insertedId);
+        var combinedResponse = remotePushResponse + " local insert ID: " + result.insertedId;
+        return response.send(combinedResponse);
     });
+
 });
 
 //////////////////////////////////////////////////////////
