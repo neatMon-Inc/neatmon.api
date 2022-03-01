@@ -1,3 +1,8 @@
+
+# Description: Docker compose to bring up environment for API
+# Author: neatMon, Inc.
+# License: MIT
+
 version: "3.8"
 services:
     mongoDB:
@@ -8,16 +13,26 @@ services:
             - ./database/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
         ports:
             - "27017:27017"
+        environment:
+            - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+            - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+            - MONGO_INITDB_DATABASE=${MONGO_DATABASE_NAME}
+        command: mongod
         restart: always
     neatmon-api:
         container_name: api
         hostname: api-server
+        volumes:
+            - "./server:/usr/src/app"
         build: ./server
         ports:
             - "5000:5000"
+        environment:
+            - MONGO_DATABASE_URI=${MONGO_DATABASE_URI}
+            - MONGO_DATABASE_COLLECTION=${MONGO_DATABASE_COLLECTION}
+            - MONGO_DATABASE_NAME=${MONGO_DATABASE_NAME}
+            - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+            - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
         restart: always
         depends_on:
             - "mongoDB"
-volumes:
-    database: 
-    server:
