@@ -3,3 +3,6 @@ run:
 
 down:
 	docker-compose down
+
+prune:
+	docker system prune

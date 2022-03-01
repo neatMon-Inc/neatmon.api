@@ -15,11 +15,11 @@ console.log("Setting up app.  Getting environment variables");
 CONNECTION_URL = process.env.MONGO_DATABASE_URI;
 const DATABASE_NAME = process.env.MONGO_DATABASE_NAME;
 const DATABASE_COLLECTION = process.env.MONGO_DATABASE_COLLECTION;
-const MONGO_INITDB_ROOT_USERNAME = process.env.MONGO_INITDB_ROOT_USERNAME;
-const MONGO_INITDB_ROOT_PASSWORD = process.env.MONGO_INITDB_ROOT_PASSWORD;
+const MONGO_DATABASE_EDITOR_USER = process.env.MONGO_DATABASE_EDITOR_USER;
+const MONGO_DATABASE_EDITOR_PASSWORD = process.env.MONGO_DATABASE_EDITOR_PASSWORD;
 
 // Add the protocol to the connection URL
-CONNECTION_URL = "mongodb://" + MONGO_INITDB_ROOT_USERNAME + ":" + MONGO_INITDB_ROOT_PASSWORD + "@" + CONNECTION_URL + "/admin";
+CONNECTION_URL = "mongodb://" + MONGO_DATABASE_EDITOR_USER + ":" + MONGO_DATABASE_EDITOR_PASSWORD + "@" + CONNECTION_URL + "/" + DATABASE_NAME;
 
 console.log("DB string " + CONNECTION_URL);
 
@@ -33,9 +33,8 @@ var database, collection;
 //////////////////////////////////////////////////////////
 //// POST METHODS                                   //////
 //////////////////////////////////////////////////////////
-app.post("/device/:id", (request, response) => {
-    
-
+app.post("/api/device/:id", (request, response) => {
+    // Test insert with random data
     var now = new Date();
     m_date = new Date(now.toISOString()); // For some reason this extra step is required.
     var m_guid = "437870dc-0984-492f-91c4-42c007621de6";
@@ -93,15 +92,15 @@ app.post("/device/:id", (request, response) => {
             "Date": m_date
         }
     }
-    console.log(doc);
-    response.send(doc);
+    // console.log(doc);
+    // response.send(doc);
 
-    // collection.insert(request.body, (error, result) => {
-    //     if (error) {
-    //         return response.status(500).send(error);
-    //     }
-    //     response.send(result.result);
-    // });
+    collection.insert(doc, (error, result) => {
+        if (error) {
+            return response.status(500).send(error);
+        }
+        response.send(result);
+    });
 });
 
 //////////////////////////////////////////////////////////

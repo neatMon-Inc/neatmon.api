@@ -11,6 +11,16 @@ const DATABASE_COLLECTION = 'device-data';
 //// SETUP DATABASE                       ////
 //////////////////////////////////////////////
 db = new Mongo().getDB(DATABASE_NAME);
+db.createUser({
+    user: "mongodb-user",
+    pwd: "mongodb-user-password",
+    roles: [
+        {
+            role: "readWrite",
+            db: "neatmon"
+        }
+    ]
+});
 
 //////////////////////////////////////////////
 //// CREATE A COLLECTION                //////
