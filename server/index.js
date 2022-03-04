@@ -41,7 +41,7 @@ app.post("/api/device/:id", (request, response) => {
     m_guid = request.body.GUID;
     if (m_guid != request.params.id) return response.status(500).send("Bad request"); //fail
 
-
+    console.log("Received new request: " + request.body);
     m_hw_id = request.body.HW;
     m_fw_id = request.body.FW;
     m_vals_1 = request.body.VAL.SM5;
