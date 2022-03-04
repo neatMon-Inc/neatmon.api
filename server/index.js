@@ -44,12 +44,15 @@ app.post("/api/device/:id", (request, response) => {
 
     m_hw_id = request.body.HW;
     m_fw_id = request.body.FW;
-    m_vals_1 = request.body.VAL.SM6;
-    m_vals_2 = request.body.VAL.SM12;
-    m_vals_3 = request.body.VAL.SM18;
-    m_vals_4 = request.body.VAL.SM24;
-    m_vals_5 = request.body.VAL.SM36;
-    m_vals_6 = request.body.VAL.SM48;
+    m_vals_1 = request.body.VAL.SM5;
+    m_vals_2 = request.body.VAL.SM15;
+    m_vals_3 = request.body.VAL.SM25;
+    m_vals_4 = request.body.VAL.SM35;
+    m_vals_5 = request.body.VAL.SM45;
+    m_vals_6 = request.body.VAL.SM55;
+    m_vals_7 = request.body.VAL.SM65;
+    m_vals_8 = request.body.VAL.SM75;
+    m_vals_9 = request.body.VAL.SM85;
     m_vals_batt = request.body.VAL.BATT;
     m_vals_signal = request.body.VAL.DB;
 
@@ -70,12 +73,15 @@ app.post("/api/device/:id", (request, response) => {
         "HW": m_hw_id,
         "FW": m_fw_id,
         "VAL": {
-            "SM6": m_vals_1,
-            "SM12": m_vals_2,
-            "SM18": m_vals_3,
-            "SM24": m_vals_4,
-            "SM36": m_vals_5,
-            "SM48": m_vals_6,
+            "SM5": m_vals_1,
+            "SM15": m_vals_2,
+            "SM25": m_vals_3,
+            "SM35": m_vals_4,
+            "SM45": m_vals_5,
+            "SM55": m_vals_6,
+            "SM65": m_vals_7,
+            "SM75": m_vals_8,
+            "SM85": m_vals_9,
             "BATT": m_vals_batt,
             "DB": m_vals_signal,
             "Date": m_date
