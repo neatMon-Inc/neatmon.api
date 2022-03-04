@@ -9,6 +9,13 @@ After bringing up the neatMon API using the appropriate make commands, the app c
 # Installation
 The API requires Docker to be installed and running, or can be run locally with the `node index.js` command, however there may be issues that arise as versions differ from development environments and production and as such Docker is preferred method for maintaining the consistency between different environments.
 
+## System requirements
+Linux system is preferred, though others can be substituted, the following packages may be required
+
+Required packages:
+* make
+* docker
+
 ## Environment Variables Setup
 Each installation may have different configurations.  To handle this, we have provided a configuration file located at: `/config/.env` additional setup is required to setup the standard mongo user in the mongo configuration file: `/database/init-mongo.js`  
 
