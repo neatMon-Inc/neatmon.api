@@ -69,15 +69,15 @@ app.post("/api/device/:p_guid", async (request, response) => {
     if (m_guid != request.params.p_guid) return response.status(500).send("Bad unit/password");
 
     // The best practice is to include a password check, if the schema doesn't provide this, just comment this out
-    console.log("Looking up pword for GUID: " + m_guid);
-    m_pword = request.body.pword;
-    let pwordCheckResult = await checkPword(m_pword, m_guid);
-    if (pwordCheckResult) 
-        console.log("OK pword");
-    else {
-        console.log("Error with pword");
-        return response.status(500).send(error);
-    }
+    // console.log("Looking up pword for GUID: " + m_guid);
+    // m_pword = request.body.pword;
+    // let pwordCheckResult = await checkPword(m_pword, m_guid);
+    // if (pwordCheckResult) 
+    //     console.log("OK pword");
+    // else {
+    //     console.log("Error with pword");
+    //     return response.status(500).send(error);
+    // }
     // End password checking
 
     console.log("Received new request: " + request.body);
