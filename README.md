@@ -4,7 +4,7 @@ This is an example for the data services to receive data from neatMon devices.  
 For assistance please contact info@neatmon.com
 
 # Getting Started
-After bringing up the neatMon API using the appropriate make commands, the app can be reached from a web browser at the address `http://localhost/api/status` which should show the message: "API Working Sat Feb 26 2022 08:16:20 GMT+0000 (Coordinated Universal Time)" (The current time should be displayed)
+After bringing up the neatMon API using the `make` command, the app can be reached from a web browser at the address `http://localhost/api/status` which should show the message: "API Working Sat Feb 26 2022 08:16:20 GMT+0000 (Coordinated Universal Time)" (The current time should be displayed)
 
 # Installation
 The API requires Docker to be installed and running, or can be run locally with the `node index.js` command, however there may be issues that arise as versions differ from development environments and production and as such Docker is preferred method for maintaining the consistency between different environments.
