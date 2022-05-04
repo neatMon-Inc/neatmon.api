@@ -42,5 +42,34 @@ From the /server folder, run the command `make build` to compile and save the co
 ### 3) Running Server App
 From the /server folder, run the command `make up` to run the app and see the debug messages
 
+# Testing API
+Using the following CURL command a code 200 will be returned, with the id for the mongo document containing the data inserted.
+
+`curl --location --request POST 'localhost/api/device/123' \
+--header 'Content-Type: application/json' \
+--header 'Cookie: session_id=s%3A_t8TmYbLBwO93s-iCXugjABXaAIURuh6.sLDpZp4A9MyJUyTwQGYgua%2Bc2bFymc4tedLJSTh98T8' \
+--data-raw '{
+    "GUID": 123,
+    "HW": "2.05",
+    "FW": "1.00",
+    "VAL": {
+        "SM5": "11",
+        "SM15": "12",
+        "SM25": "10",
+        "SM35": "15",
+        "SM45": "32",
+        "SM55": "41",
+        "SM65": "21",
+        "SM75": "44",
+        "SM85": "45",
+        "BATT": "3.7",
+        "DB": "-100",
+        "Date": 1651645088
+    }
+}'`
+
+Expected response:
+`OK! _id: 627215ee262bd35762fb5a88`
+
 # Other Useful Information
 See /server/index.js for a complete list of routes and more detailed comments
