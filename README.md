@@ -1,16 +1,16 @@
 # Description
-Data services for neatMon devices.  Allows incoming data to be received, parsed and stored in a database for later retrieval in other apps and services.
+This is an example for the data services to receive data from neatMon devices.  Allows incoming data to be received, parsed and stored in a database for later retrieval in other apps and services.
 
 For assistance please contact info@neatmon.com
 
 # Getting Started
-After bringing up the neatMon API using the appropriate make commands, the app can be reached from a web browser at the address `http://localhost:3000/api/status` which should show the message: "API Working Sat Feb 26 2022 08:16:20 GMT+0000 (Coordinated Universal Time)" (The current time should be displayed)
+After bringing up the neatMon API using the appropriate make commands, the app can be reached from a web browser at the address `http://localhost/api/status` which should show the message: "API Working Sat Feb 26 2022 08:16:20 GMT+0000 (Coordinated Universal Time)" (The current time should be displayed)
 
 # Installation
 The API requires Docker to be installed and running, or can be run locally with the `node index.js` command, however there may be issues that arise as versions differ from development environments and production and as such Docker is preferred method for maintaining the consistency between different environments.
 
 ## System requirements
-Linux system is preferred, though others can be substituted, the following packages may be required
+Linux system is preferred, though others can be substituted, the following packages are suggest/required
 
 Required packages:
 * make
@@ -24,9 +24,13 @@ In our deployment, the app requires both a database and server to respond to inc
 
 ### Running and stopping the complete app with Docker Compose
 #### Run
-From the root directory use the command `make run` to build and run the containers
+From the root directory use the command `make` or `make run` to build and run the containers
 
-#### Stop
+#### Stopping containers
+Usually the containers and their subsequent logs will be displayed in the same terminal as when they were started.  To stop a container that is active in the current terminal just press `CTRL + C` and the containers will stop.  Don't worry, you won't loose any work.  If you want to erase everything in the database and start over, see the steps below under 'Stop + Erase' section below.
+
+When a container is running but is not displaying in the active terminal for whatever reason, you can stop it by issuing the command `docker stop $(docker ps -q)` which will terminate all active docker containers with an exit code 0.
+#### Stop + Erase
 To stop the running containers from the dev environment, press `ctrl+c` then if desired `make flush` to delete any containers, volumes and network configurations from the previous instance.
 
 ## Building just the server
@@ -39,4 +43,4 @@ From the /server folder, run the command `make build` to compile and save the co
 From the /server folder, run the command `make up` to run the app and see the debug messages
 
 # Other Useful Information
-See /server/index.js for a complete list of routes and more details
+See /server/index.js for a complete list of routes and more detailed comments

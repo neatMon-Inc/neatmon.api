@@ -16,7 +16,8 @@ const fetch = require('isomorphic-fetch')
 console.log("Setting up app.  Getting environment variables");
 CONNECTION_URL = process.env.MONGO_DATABASE_URI;
 const DATABASE_NAME = process.env.MONGO_DATABASE_NAME;
-const DATABASE_COLLECTION = process.env.MONGO_DATABASE_COLLECTION;
+const DATABASE_COLLECTION = process.env.MONGO_DATABASE_COLLECTION_DATA;
+const DATABASE_CONFIG = process.env.MONGO_DATABASE_COLLECTION_CONFIGURATION;
 const MONGO_DATABASE_EDITOR_USER = process.env.MONGO_DATABASE_EDITOR_USER;
 const MONGO_DATABASE_EDITOR_PASSWORD = process.env.MONGO_DATABASE_EDITOR_PASSWORD;
 
@@ -33,77 +34,77 @@ app.use(BodyParser.raw());
 var database, collection;
 
 //////////////////////////////////////////////////////////
+//// FUNCTIONS                                      //////
+//////////////////////////////////////////////////////////
+async function checkPword(p_pword, p_guid) {
+    const query = { GUID: p_guid };
+    console.log("Checking for " + p_guid + ", " + p_pword);
+    return new Promise(function () {
+        setTimeout(function () {
+            try {
+                unit_configuration.findOne(query, (error, result) => {
+                    console.log("Result: " + result);
+                    if (error) {
+                        return 0;
+                    }
+                    else if (!result) return 0;
+                    else return 1;
+                });
+            } catch (error) {
+                console.log("ERROR retrieving password");
+                return 0;
+            }
+        }, 1000) // wait 1000mS for response..
+    })
+} 
+
+//////////////////////////////////////////////////////////
 //// POST METHODS                                   //////
 //////////////////////////////////////////////////////////
-app.post("/api/device/:id", (request, response) => {
+app.post("/api/device/:p_guid", async (request, response) => {
 
-
+    console.log("Receiving request from " + request.body.GUID);
+    // First check that the GUID is matching
     m_guid = request.body.GUID;
-    if (m_guid != request.params.id) return response.status(500).send("Bad request"); //fail
+    if (m_guid != request.params.p_guid) return response.status(500).send("Bad unit/password");
+
+    // The best practice is to include a password check, if the schema doesn't provide this, just comment this out
+    console.log("Looking up pword for GUID: " + m_guid);
+    m_pword = request.body.pword;
+    let pwordCheckResult = await checkPword(m_pword, m_guid);
+    if (pwordCheckResult) 
+        console.log("OK pword");
+    else {
+        console.log("Error with pword");
+        return response.status(500).send(error);
+    }
+    // End password checking
 
     console.log("Received new request: " + request.body);
+
+    // If these are not included in the body, they will not be used in the db insert
     m_hw_id = request.body.HW;
     m_fw_id = request.body.FW;
-    m_vals_1 = request.body.VAL.SM5;
-    m_vals_2 = request.body.VAL.SM15;
-    m_vals_3 = request.body.VAL.SM25;
-    m_vals_4 = request.body.VAL.SM35;
-    m_vals_5 = request.body.VAL.SM45;
-    m_vals_6 = request.body.VAL.SM55;
-    m_vals_7 = request.body.VAL.SM65;
-    m_vals_8 = request.body.VAL.SM75;
-    m_vals_9 = request.body.VAL.SM85;
-    m_vals_batt = request.body.VAL.BATT;
-    m_vals_signal = request.body.VAL.DB;
 
+    // Let's go through the data in the VAL array and dump to console for reference
+    for (var ikey of Object.keys(request.body.VAL))
+    {
+        console.log(ikey + "->" + request.body.VAL[ikey]);
+    }
 
-    // for (var ikey of Object.keys(request.body.VAL))
-    // {
-    //     console.log(ikey + "->" + request.body.VAL[ikey]);
-
-    // }
-
-    // Use the server time for now
-    var now = new Date(); // Get the date/time
-    var m_date = new Date(now.toISOString()); // Convert to ISO format
+    // If it is desired to maintain a separate record of when the data is received as opposed to 
+    // recorded then consider the code below for a starting point.  Add the m_date to the doc object
+    // too.
+    // var now = new Date(); // Get the date/time
+    // var m_date = new Date(now.toISOString()); // Convert to ISO format
 
     const doc =
     {
         "GUID": m_guid,
         "HW": m_hw_id,
         "FW": m_fw_id,
-        "VAL": {
-            "SM5": m_vals_1,
-            "SM15": m_vals_2,
-            "SM25": m_vals_3,
-            "SM35": m_vals_4,
-            "SM45": m_vals_5,
-            "SM55": m_vals_6,
-            "SM65": m_vals_7,
-            "SM75": m_vals_8,
-            "SM85": m_vals_9,
-            "BATT": m_vals_batt,
-            "DB": m_vals_signal,
-            "Date": m_date
-        }
+        "VAL": request.body.VAL
     }
-
-    var remotePushResponse;
-    // HTTP push to remote
-    axios
-        .post('https://data-streams-api.azurewebsites.net/stream', doc)
-        .then(axios_res => {
-            console.log(`statusCode: ${axios_res.status}`);
-            var responseText = axios_res.data;
-            console.log(responseText);
-            // console.log(Object.keys(axios_res)); // list the keys of the response
-            remotePushResponse = "Remote res ID: " + responseText;
-            // return response.send(axios_res.status);
-        })
-        .catch(error => {
-            console.error(error);
-            return response.send(error);
-        });
 
     // Insert adds the _id to the doc.
     collection.insertOne(doc, (error, result) => {
@@ -111,7 +112,8 @@ app.post("/api/device/:id", (request, response) => {
             return response.status(500).send(error);
         }
         console.log("Insert db _id:" + result.insertedId);
-        var combinedResponse = remotePushResponse + " local insert ID: " + result.insertedId;
+        console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
+        var combinedResponse = "OK! _id: " + result.insertedId;
         return response.send(combinedResponse);
     });
 
@@ -129,7 +131,7 @@ app.get("/api/status", (request, response) => {
  **/
 
 app.get("/api/device/:guid", (request, response) => {
-    console.log("Received a data request for guid: " + request.params.guid);
+    console.log("Received a data request for _id: " + request.params.guid);
     collection.findOne({ "_id": new ObjectId(request.params.guid) }, (error, result) => {
         if (error) {
             return response.status(500).send("Doesn't exist, or bad request");
@@ -148,7 +150,9 @@ app.listen(5000, () => {
             throw error;
         }
         database = client.db(DATABASE_NAME);
-        collection = database.collection(DATABASE_COLLECTION);
-        console.log("Connected to `" + DATABASE_NAME + ":" + DATABASE_COLLECTION + "`!");
+        collection = database.collection(DATABASE_COLLECTION); // data storage
+        // collection = database.collection("device-data");
+        unit_configuration = database.collection(DATABASE_CONFIG); // password storage
+        console.log("Connected to `" + DATABASE_NAME + ":" + DATABASE_CONFIG + ", " + DATABASE_COLLECTION + "`!");
     });
 });

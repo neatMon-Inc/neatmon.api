@@ -6,6 +6,7 @@
 version: "3.8"
 services:
     mongoDB:
+        # https://hub.docker.com/_/mongo
         container_name: mongoDB
         hostname: mongo-database
         image: mongo
@@ -26,10 +27,11 @@ services:
             - "./server:/usr/src/app"
         build: ./server
         ports:
-            - "5000:5000"
+            - "80:5000"
         environment:
             - MONGO_DATABASE_URI=${MONGO_DATABASE_URI}
-            - MONGO_DATABASE_COLLECTION=${MONGO_DATABASE_COLLECTION}
+            - MONGO_DATABASE_COLLECTION_DATA=${MONGO_DATABASE_COLLECTION_DATA}
+            - MONGO_DATABASE_COLLECTION_CONFIGURATION=${MONGO_DATABASE_COLLECTION_CONFIGURATION}
             - MONGO_DATABASE_NAME=${MONGO_DATABASE_NAME}
             - MONGO_DATABASE_EDITOR_USER=${MONGO_DATABASE_EDITOR_USER}
             - MONGO_DATABASE_EDITOR_PASSWORD=${MONGO_DATABASE_EDITOR_PASSWORD}
