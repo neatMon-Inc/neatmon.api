@@ -131,11 +131,25 @@ app.get("/api/status", (request, response) => {
     response.send("API Working " + Date());
 });
 
-/** GET: ID 
- *  Description: Returns data for a given GUID passed as parameter to /api/device/
- **/
+/*
+** Get the status of a GUID passed as parameter
+*/
+ app.get("/api/device/status/:m_guid", (request, response) => {
+    console.log("Received a data request for GUID status: " + request.params.m_guid);
 
-app.get("/api/device/:postId", (request, response) => {
+    collection.findOne({ "guid": request.body.m_guid }, (error, result) => {
+        if (error) {
+            return response.status(500).send("ID doesn't exist, or bad request");
+            // return response.status(500).send(error);
+        }
+        response.send(result);
+    });
+});
+
+/*
+**  Get the data from the POST _id passed as parameter
+*/
+app.get("/api/device/data/:postId", (request, response) => {
     console.log("Received a data request for _id: " + request.params.postId);
     collection.findOne({ "_id": new ObjectId(request.params.postId) }, (error, result) => {
         if (error) {
