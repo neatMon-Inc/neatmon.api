@@ -63,9 +63,9 @@ async function checkPword(p_pword, p_guid) {
 //////////////////////////////////////////////////////////
 app.post("/api/device/:p_guid", async (request, response) => {
 
-    console.log("Receiving request from " + request.body.GUID);
+    console.log("Receiving post request from " + request.body.id);
     // First check that the GUID is matching
-    m_guid = request.body.GUID;
+    m_guid = request.body.id;
     if (m_guid != request.params.p_guid) return response.status(500).send("Bad unit/password");
 
     // The best practice is to include a password check, if the schema doesn't provide this, just comment this out
@@ -80,16 +80,18 @@ app.post("/api/device/:p_guid", async (request, response) => {
     // }
     // End password checking
 
-    console.log("Received new request: " + request.body);
+    console.log("GUID/ID: " + request.body.id);
+    console.log("HW: " + request.body.hw);
+    console.log("FW: " + request.body.fw);
 
     // If these are not included in the body, they will not be used in the db insert
-    m_hw_id = request.body.HW;
-    m_fw_id = request.body.FW;
+    m_hw_id = request.body.hw;
+    m_fw_id = request.body.fw;
 
-    // Let's go through the data in the VAL array and dump to console for reference
-    for (var ikey of Object.keys(request.body.VAL))
+    // Let's go through the data in the value (v) array and dump to console for reference
+    for (var ikey of Object.keys(request.body.v))
     {
-        console.log(ikey + "->" + request.body.VAL[ikey]);
+        console.log(ikey + "->" + request.body.v[ikey]);
     }
 
     // If it is desired to maintain a separate record of when the data is received as opposed to 
@@ -100,10 +102,10 @@ app.post("/api/device/:p_guid", async (request, response) => {
 
     const doc =
     {
-        "GUID": m_guid,
-        "HW": m_hw_id,
-        "FW": m_fw_id,
-        "VAL": request.body.VAL
+        "guid": m_guid,
+        "hw": m_hw_id,
+        "fw": m_fw_id,
+        "v": request.body.v
     }
 
     // Insert adds the _id to the doc.
@@ -126,15 +128,15 @@ app.get("/api/status", (request, response) => {
     response.send("API Working " + Date());
 });
 
-/** GET: ID
+/** GET: ID 
  *  Description: Returns data for a given GUID passed as parameter to /api/device/
  **/
 
-app.get("/api/device/:guid", (request, response) => {
-    console.log("Received a data request for _id: " + request.params.guid);
-    collection.findOne({ "_id": new ObjectId(request.params.guid) }, (error, result) => {
+app.get("/api/device/:postId", (request, response) => {
+    console.log("Received a data request for _id: " + request.params.postId);
+    collection.findOne({ "_id": new ObjectId(request.params.postId) }, (error, result) => {
         if (error) {
-            return response.status(500).send("Doesn't exist, or bad request");
+            return response.status(500).send("ID doesn't exist, or bad request");
             // return response.status(500).send(error);
         }
         response.send(result);

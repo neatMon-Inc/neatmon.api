@@ -27,7 +27,7 @@ services:
             - "./server:/usr/src/app"
         build: ./server
         ports:
-            - "80:5000"
+            - "1330:5000"
         environment:
             - MONGO_DATABASE_URI=${MONGO_DATABASE_URI}
             - MONGO_DATABASE_COLLECTION_DATA=${MONGO_DATABASE_COLLECTION_DATA}
