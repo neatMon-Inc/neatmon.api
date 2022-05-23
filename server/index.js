@@ -99,14 +99,15 @@ app.post("/api/device/:p_guid", async (request, response) => {
     // If it is desired to maintain a separate record of when the data is received as opposed to 
     // recorded then consider the code below for a starting point.  Add the m_date to the doc object
     // too.
-    // var now = new Date(); // Get the date/time
-    // var m_date = new Date(now.toISOString()); // Convert to ISO format
+    var now = new Date(); // Get the date/time
+    var m_date = new Date(now.toISOString()); // Convert to ISO format
 
     const doc =
     {
         "guid": m_guid,
         "hw": m_hw_id,
         "fw": m_fw_id,
+        "d": m_date,
         "v": request.body.v
     }
 
