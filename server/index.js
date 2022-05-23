@@ -137,7 +137,7 @@ app.get("/api/status", (request, response) => {
  app.get("/api/device/status/:m_guid", (request, response) => {
     console.log("Received a data request for GUID status: " + request.params.m_guid);
 
-    collection.findOne({ "guid": request.body.m_guid }, (error, result) => {
+    collection.findOne({ "guid": request.params.m_guid }, (error, result) => {
         if (error) {
             return response.status(500).send("ID doesn't exist, or bad request");
             // return response.status(500).send(error);
