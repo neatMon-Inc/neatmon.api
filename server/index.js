@@ -137,7 +137,10 @@ app.get("/api/status", (request, response) => {
  app.get("/api/device/status/:m_guid", (request, response) => {
     console.log("Received a data request for GUID status: " + request.params.m_guid);
 
-    collection.findOne({ "guid": request.params.m_guid }, (error, result) => {
+    var query = { 'guid' : request.params.m_guid }; // look for all documents/data with this guid
+    var sort = { 'd' : -1 }; // show data ascending according to the recorded date (d)
+
+    collection.find(query).sort(sort).toArray( function(error, result) {
         if (error) {
             return response.status(500).send("ID doesn't exist, or bad request");
             // return response.status(500).send(error);
