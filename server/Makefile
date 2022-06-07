@@ -1,8 +1,8 @@
 build:
-	docker build -t nodemon.api .
+	docker build -t neatmon.api .
 
 up:	
-	docker run nodemon.api
+	docker run neatmon.api
 
 up-prod:	
 	docker run -dp 3000:3000 nodemon.api

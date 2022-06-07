@@ -5,7 +5,7 @@
     Date: 2022-02-25
 */
 
-require('dotenv').config(); // Get env variables
+require('dotenv').config({}); // Get env variables
 const axios = require("axios"); // HTTP Client
 const Express = require("express");
 const BodyParser = require("body-parser");
@@ -13,8 +13,12 @@ const MongoClient = require("mongodb").MongoClient;
 const ObjectId = require("mongodb").ObjectID;
 const fetch = require('isomorphic-fetch')
 
+INSIDE_NEATMON = process.env.INSIDE_NEATMON
+console.log(INSIDE_NEATMON)
+
 console.log("Setting up app.  Getting environment variables");
-CONNECTION_URL = process.env.MONGO_DATABASE_URI;
+FROM_NEATMON_IO = process.env.FROM_NEATMON_IO
+CONNECTION_URL = process.env.MONGO_URL;
 const DATABASE_NAME = process.env.MONGO_DATABASE_NAME;
 const DATABASE_COLLECTION = process.env.MONGO_DATABASE_COLLECTION_DATA;
 const DATABASE_CONFIG = process.env.MONGO_DATABASE_COLLECTION_CONFIGURATION;
@@ -24,7 +28,10 @@ console.log("Connecting with User: " + MONGO_DATABASE_EDITOR_USER);
 console.log("pword: " + MONGO_DATABASE_EDITOR_PASSWORD);
 
 // Add the protocol to the connection URL
-CONNECTION_URL = "mongodb://" + MONGO_DATABASE_EDITOR_USER + ":" + MONGO_DATABASE_EDITOR_PASSWORD + "@" + CONNECTION_URL + "/" + DATABASE_NAME;
+if(FROM_NEATMON_IO !== 'true'){
+    CONNECTION_URL = "mongodb://" + MONGO_DATABASE_EDITOR_USER + ":" + MONGO_DATABASE_EDITOR_PASSWORD + "@" + CONNECTION_URL + "/" + DATABASE_NAME;
+}
+
 
 console.log("DB string " + CONNECTION_URL);
 
@@ -159,6 +166,7 @@ app.get("/api/device/data/:postId", (request, response) => {
             return response.status(500).send("ID doesn't exist, or bad request");
             // return response.status(500).send(error);
         }
+        console.log(result);
         response.send(result);
     });
 });
@@ -167,7 +175,7 @@ app.get("/api/device/data/:postId", (request, response) => {
 /////   DATABASE CONNECTOR                          /////
 /////////////////////////////////////////////////////////
 app.listen(5000, () => {
-    MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true }, (error, client) => {
+    MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true, tlsCAFile: 'ca-certificate.crt' }, (error, client) => {
         if (error) {
             throw error;
         }
