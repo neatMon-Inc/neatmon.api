@@ -28,7 +28,7 @@ console.log("Connecting with User: " + MONGO_DATABASE_EDITOR_USER);
 console.log("pword: " + MONGO_DATABASE_EDITOR_PASSWORD);
 
 // Add the protocol to the connection URL
-if(FROM_NEATMON_IO !== 'true'){
+if (FROM_NEATMON_IO !== 'true') {
     CONNECTION_URL = "mongodb://" + MONGO_DATABASE_EDITOR_USER + ":" + MONGO_DATABASE_EDITOR_PASSWORD + "@" + CONNECTION_URL + "/" + DATABASE_NAME;
 }
 
@@ -65,7 +65,7 @@ async function checkPword(p_pword, p_guid) {
             }
         }, 1000) // wait 1000mS for response..
     })
-} 
+}
 
 //////////////////////////////////////////////////////////
 //// POST METHODS                                   //////
@@ -98,8 +98,7 @@ app.post("/api/device/:p_guid", async (request, response) => {
     m_fw_id = request.body.fw;
 
     // Let's go through the data in the value (v) array and dump to console for reference
-    for (var ikey of Object.keys(request.body.v))
-    {
+    for (var ikey of Object.keys(request.body.v)) {
         console.log(ikey + "->" + request.body.v[ikey]);
     }
 
@@ -119,35 +118,41 @@ app.post("/api/device/:p_guid", async (request, response) => {
     }
 
     // Insert adds the _id to the doc.
-    collection.insertOne(doc, (error, result) => {
-        if (error) {
-            return response.status(500).send(error);
-        }
-        console.log("Insert db _id:" + result.insertedId);
-        console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
-        var combinedResponse = "OK! _id: " + result.insertedId;
-        return response.send(combinedResponse);
-    });
+    try {
+        await collection.insertOne(doc, (error, result) => {
+            if (error) {
+                return response.status(500).send(error);
+            }
+            console.log("Insert db _id:" + result.insertedId);
+            console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
+            var combinedResponse = "OK! _id: " + result.insertedId;
+            return response.send(combinedResponse);
+        });
+    } catch (e) {
+        console.log("Error parsing incoming request: ", e);
+        return response.status(500).send("Error inserting data into collection");
+    }
+
 
 });
 
 //////////////////////////////////////////////////////////
 //// GET METHODS                                    //////
 //////////////////////////////////////////////////////////
-app.get("/api/status", (request, response) => {
+app.get("/api/status", async (request, response) => {
     response.send("API Working " + Date());
 });
 
 /*
 ** Get the status of a GUID passed as parameter
 */
- app.get("/api/device/status/:m_guid", (request, response) => {
+app.get("/api/device/status/:m_guid", async (request, response) => {
     console.log("Received a data request for GUID status: " + request.params.m_guid);
 
-    var query = { 'guid' : request.params.m_guid }; // look for all documents/data with this guid
-    var sort = { 'd' : -1 }; // show data ascending according to the recorded date (d)
+    var query = { 'guid': request.params.m_guid }; // look for all documents/data with this guid
+    var sort = { 'd': -1 }; // show data ascending according to the recorded date (d)
 
-    collection.find(query).sort(sort).toArray( function(error, result) {
+    await collection.find(query).sort(sort).toArray(function (error, result) {
         if (error) {
             return response.status(500).send("ID doesn't exist, or bad request");
             // return response.status(500).send(error);
@@ -159,9 +164,9 @@ app.get("/api/status", (request, response) => {
 /*
 **  Get the data from the POST _id passed as parameter
 */
-app.get("/api/device/data/:postId", (request, response) => {
+app.get("/api/device/data/:postId", async (request, response) => {
     console.log("Received a data request for _id: " + request.params.postId);
-    collection.findOne({ "_id": new ObjectId(request.params.postId) }, (error, result) => {
+    await collection.findOne({ "_id": new ObjectId(request.params.postId) }, (error, result) => {
         if (error) {
             return response.status(500).send("ID doesn't exist, or bad request");
             // return response.status(500).send(error);
@@ -174,7 +179,7 @@ app.get("/api/device/data/:postId", (request, response) => {
 /////////////////////////////////////////////////////////
 /////   DATABASE CONNECTOR                          /////
 /////////////////////////////////////////////////////////
-app.listen(5000, () => {
+app.listen(5000, async () => {
     MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true, tlsCAFile: 'ca-certificate.crt' }, (error, client) => {
         if (error) {
             throw error;
