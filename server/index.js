@@ -129,7 +129,7 @@ app.post("/api/device/:p_guid", async (request, response) => {
             return response.send(combinedResponse);
         });
     } catch (e) {
-        console.log("Error parsing incoming request: ", e);
+        console.error("Error parsing incoming request: ", e);
         return response.status(500).send("Error inserting data into collection");
     }
 
@@ -151,14 +151,18 @@ app.get("/api/device/status/:m_guid", async (request, response) => {
 
     var query = { 'guid': request.params.m_guid }; // look for all documents/data with this guid
     var sort = { 'd': -1 }; // show data ascending according to the recorded date (d)
-
-    await collection.find(query).sort(sort).toArray(function (error, result) {
-        if (error) {
-            return response.status(500).send("ID doesn't exist, or bad request");
-            // return response.status(500).send(error);
-        }
-        response.send(result);
-    });
+    try{
+        await collection.find(query).sort(sort).toArray(function (error, result) {
+            if (error) {
+                return response.status(500).send("ID doesn't exist, or bad request");
+                // return response.status(500).send(error);
+            }
+            response.send(result);
+        });
+    }catch(e){
+        console.error("Error parsing incoming request: ", e);
+        return response.status(500).send("Error finding record in collection");
+    }
 });
 
 /*
@@ -166,28 +170,39 @@ app.get("/api/device/status/:m_guid", async (request, response) => {
 */
 app.get("/api/device/data/:postId", async (request, response) => {
     console.log("Received a data request for _id: " + request.params.postId);
-    await collection.findOne({ "_id": new ObjectId(request.params.postId) }, (error, result) => {
-        if (error) {
-            return response.status(500).send("ID doesn't exist, or bad request");
-            // return response.status(500).send(error);
-        }
-        console.log(result);
-        response.send(result);
-    });
+    try{
+        await collection.findOne({ "_id": new ObjectId(request.params.postId) }, (error, result) => {
+            if (error) {
+                return response.status(500).send("ID doesn't exist, or bad request");
+                // return response.status(500).send(error);
+            }
+            console.log(result);
+            response.send(result);
+        });
+    }catch(e){
+        console.error("Error parsing incoming request: ", e);
+        return response.status(500).send("Error finding record in collection");
+    }
+    
 });
 
 /////////////////////////////////////////////////////////
 /////   DATABASE CONNECTOR                          /////
 /////////////////////////////////////////////////////////
 app.listen(5000, async () => {
-    MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true, tlsCAFile: 'ca-certificate.crt' }, (error, client) => {
-        if (error) {
-            throw error;
-        }
-        database = client.db(DATABASE_NAME);
-        collection = database.collection(DATABASE_COLLECTION); // data storage
-        // collection = database.collection("device-data");
-        unit_configuration = database.collection(DATABASE_CONFIG); // password storage
-        console.log("Connected to `" + DATABASE_NAME + ":" + DATABASE_CONFIG + ", " + DATABASE_COLLECTION + "`!");
-    });
+    try{
+        MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true, tlsCAFile: 'ca-certificate.crt' }, (error, client) => {
+            if (error) {
+                throw error;
+            }
+            database = client.db(DATABASE_NAME);
+            collection = database.collection(DATABASE_COLLECTION); // data storage
+            // collection = database.collection("device-data");
+            unit_configuration = database.collection(DATABASE_CONFIG); // password storage
+            console.log("Connected to `" + DATABASE_NAME + ":" + DATABASE_CONFIG + ", " + DATABASE_COLLECTION + "`!");
+        });
+    }catch(e){
+        console.error("Error connecting to Mongo client: ", e);
+    }
+    
 });
