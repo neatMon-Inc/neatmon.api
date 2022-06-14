@@ -98,8 +98,11 @@ app.post("/api/device/:p_guid", async (request, response) => {
     m_fw_id = request.body.fw;
 
     // Let's go through the data in the value (v) array and dump to console for reference
-    for (var ikey of Object.keys(request.body.v)) {
-        console.log(ikey + "->" + request.body.v[ikey]);
+    if (request.body.v)
+    {
+        for (var ikey of Object.keys(request.body.v)) {
+            console.log(ikey + "->" + request.body.v[ikey]);
+        }
     }
 
     // If it is desired to maintain a separate record of when the data is received as opposed to 
