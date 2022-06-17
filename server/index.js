@@ -72,10 +72,18 @@ async function checkPword(p_pword, p_guid) {
 //////////////////////////////////////////////////////////
 app.post("/api/device/:p_guid", async (request, response) => {
 
-    console.log("Receiving post request from " + request.body.id);
+    console.log("Post req from GUID:" + request.params.p_guid + " ID:" + request.body.id);
+
     // First check that the GUID is matching
+    // The incoming post can either be the full GUID string, or the shortened string
+    // To reduce payload size the GUID will be shortened to the last 5 digits in the body of the post
     m_guid = request.body.id;
-    if (m_guid != request.params.p_guid) return response.status(500).send("Bad unit/password");
+    if (m_guid.length <= 6) {
+        if (m_guid != request.params.p_guid.substring(31)) return response.status(500).send("ShortID Bad unit/password");
+    }
+    else if (m_guid != request.params.p_guid) return response.status(500).send("Bad unit/password");
+    
+    // if ((m_guid_shortened != request.params.p_guid.substring(31)) || (m_guid != request.params.p_guid)) return response.status(500).send("Bad unit/password");
 
     // The best practice is to include a password check, if the schema doesn't provide this, just comment this out
     // console.log("Looking up pword for GUID: " + m_guid);
@@ -89,7 +97,8 @@ app.post("/api/device/:p_guid", async (request, response) => {
     // }
     // End password checking
 
-    console.log("GUID/ID: " + request.body.id);
+    console.log("Post content: ");
+    console.log("GUID/ID: " + request.params.p_guid);
     console.log("HW: " + request.body.hw);
     console.log("FW: " + request.body.fw);
 
@@ -113,7 +122,7 @@ app.post("/api/device/:p_guid", async (request, response) => {
 
     const doc =
     {
-        "guid": m_guid,
+        "guid": request.params.p_guid,
         "hw": m_hw_id,
         "fw": m_fw_id,
         "d": m_date,
@@ -127,8 +136,8 @@ app.post("/api/device/:p_guid", async (request, response) => {
                 return response.status(500).send(error);
             }
             console.log("Insert db _id:" + result.insertedId);
-            console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
-            var combinedResponse = "OK! _id: " + result.insertedId;
+            // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
+            var combinedResponse = "id:" + result.insertedId + "\nt:" + Date.now();
             return response.send(combinedResponse);
         });
     } catch (e) {
