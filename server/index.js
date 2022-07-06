@@ -83,13 +83,15 @@ app.post("/api/device/:p_guid", async (request, response) => {
     // First check that the GUID is matching
     // The incoming post can either be the full GUID string, or the shortened string
     // To reduce payload size the GUID will be shortened to the last 5 digits in the body of the post
+
+    var m_guid = request.body.id;
     
     if (request.body.id.length == 5) { // short string provided
         m_guid = request.body.id;
         cutString = request.params.p_guid.length - 5;
         if (m_guid != request.params.p_guid.substring(cutString)) return response.status(500).send("ShortID Bad unit/password");
     }
-    else if (request.body.id.length == 31) m_guid = request.body.id; // Long string for GUID provided
+    else if (request.body.id.length == 31 && request.body.id == request.params.p_guid) m_guid = request.body.id; // Long string for GUID provided
     else return response.status(500).send("Bad unit/password"); // Catch all for bad guid or undefined guid in post
     
     // if ((m_guid_shortened != request.params.p_guid.substring(31)) || (m_guid != request.params.p_guid)) return response.status(500).send("Bad unit/password");
