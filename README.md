@@ -1,7 +1,7 @@
 # Description
 This is an example for the data services to receive data from neatMon devices.  Allows incoming data to be received, parsed and stored in a database for later retrieval in other apps and services.
 
-For assistance please contact info@neatmon.com
+For assistance please contact info@neatmon.com or visit the documentation for the API here: https://info.neatmon.com/home/webservices
 
 # Getting Started
 After bringing up the neatMon API using the `make` command, the app can be reached from a web browser at the address `http://localhost/api/status` which should show the message: "API Working Sat Feb 26 2022 08:16:20 GMT+0000 (Coordinated Universal Time)" (The current time should be displayed)
@@ -37,10 +37,10 @@ To stop the running containers from the dev environment, press `ctrl+c` then if 
 If you decide to use Docker Compose in the section above, then the following server build steps will not be necessary as this will be taken care of for you.
 
 ### 2) Building Server App
-From the /server folder, run the command `make build` to compile and save the corresponding Docker image locally
+From the `/server` folder, run the command `make build` to compile and save the corresponding Docker image locally
 
 ### 3) Running Server App
-From the /server folder, run the command `make up` to run the app and see the debug messages
+From the `/server` folder, run the command `make up` to run the app and see the debug messages
 
 # Other Useful Information
-See /server/index.js for a complete list of routes and more detailed comments
+See `/server/index.js` for a complete list of routes and more detailed comments
