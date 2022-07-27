@@ -167,12 +167,23 @@ app.post("/api/device/:p_guid", async (request, response) => {
 //////////////////////////////////////////////////////////
 //// GET METHODS                                    //////
 //////////////////////////////////////////////////////////
+
+/*
+** !! Note the following methods, are not necessary for the purpose of communication with nM devices
+** !! The GET methods are included for diagnostic purposes, and are especially useful for initial implementation testing
+** !! These methods may be removed for production deployments
+*/
+
+/*
+** Get the status of the API, useful for uptime monitoring of the API by a third party
+*/
 app.get("/api/status", async (request, response) => {
     response.send("API Working " + Date());
 });
 
 /*
 ** Get the status of a GUID passed as parameter
+** Returns all data for a given GUID starting with the latest
 */
 app.get("/api/device/status/:m_guid", async (request, response) => {
     console.log("Received a data request for GUID status: " + request.params.m_guid);
