@@ -26,3 +26,14 @@ db.createUser({
 //// CREATE A COLLECTION                //////
 //////////////////////////////////////////////
 db.createCollection('device-data', { capped:true, size:3000000000 });
+
+db.createCollection(
+    "weather",
+    {
+       timeseries: {
+          timeField: "timestamp",
+          metaField: "metadata",
+          granularity: "hours"
+       }
+    }
+)
