@@ -230,7 +230,7 @@ app.get("/api/device/data/:postId", async (request, response) => {
 /////////////////////////////////////////////////////////
 app.listen(5000, async () => {
     try{
-        MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true, tlsCAFile: 'ca-certificate.crt' }, (error, client) => {
+        MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true }, (error, client) => {
             if (error) {
                 throw error;
             }
