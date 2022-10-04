@@ -127,27 +127,57 @@ app.post("/api/device/:p_guid", async (request, response) => {
         "v": request.body.v
     }
 
+    //create array for new time series documents
+    var docArray = [];
+
     // Let's go through the data in the value (v) array and dump to console for reference
     if (request.body.v) {
     // if (true) {
         for (var ikey of Object.keys(doc.v)) {
-            // console.log(ikey + "->" + request.body.v[ikey]);
+            console.log(ikey + "->" + request.body.v[ikey]);
             for (var keyName in doc.v[ikey]) {
                 // console.log(keyName + ': ' + (request.body.v[ikey])[keyName]);
                 // console.log(keyName + ': ' + (doc.v[ikey])[keyName].t);
                 // console.log(keyName + ': ' + (doc.v[ikey])[keyName].h);
                 // if ((doc.v[ikey])[keyName].ts < (now - 1000)){
-                    console.log("TIME NOW: " + Date.now());
-                    console.log(keyName + ': ' + (doc.v[ikey])[keyName].ts);
+                //     console.log("TIME NOW: " + Date.now());
+                //     console.log(keyName + ': ' + (doc.v[ikey])[keyName].ts);
                 // }
-                    
+                 
+
+                // create new timeseries documents and insert them into the docArray. 
+                // Each doc will later be inserted into the new timeseries db collection
+                var metaString1 = "{\"guid\": \"" + request.params.p_guid + "\", \"sensor\": \"" +  ikey + "\", \"type\": \"t\"}";
+                var metaString2 = "{\"guid\": \"" + request.params.p_guid + "\", \"sensor\": \"" +  ikey + "\", \"type\": \"h\"}";
+                var metadata1 = JSON.parse(metaString1);
+                var metadata2 = JSON.parse(metaString2);
+                var date = new Date();
+                var doc1 = {
+                    "metadata": metadata1,
+                    "timestamp": date.toISOString(),
+                    "data": (doc.v[ikey])[keyName].t
+                };
+                var doc2 = {
+                    "metadata": metadata2,
+                    "timestamp": date.toISOString(),
+                    "data": (doc.v[ikey])[keyName].h
+                };
+                // console.log("doc1" + JSON.stringify(doc1));
+                // console.log("doc2" + JSON.stringify(doc2));
+
+                docArray.push(doc1);
+                docArray.push(doc2);
+
             }
         }
     }
 
+    console.log("docArray contents:");
+    console.log(docArray);
+
     // Insert adds the _id to the doc.
     try {
-        await collection.insertOne(doc, (error, result) => {
+        await collection.insertMany(docArray, (error, result) => {
             if (error) {
                 return response.status(500).send(error);
             }

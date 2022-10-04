@@ -32,8 +32,7 @@ db.createCollection(
     {
        timeseries: {
           timeField: "timestamp",
-          metaField: "metadata",
-          granularity: "hours"
+          metaField: "metadata"
        }
     }
 )
