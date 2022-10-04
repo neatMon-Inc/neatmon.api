@@ -153,11 +153,12 @@ app.post("/api/device/:p_guid", async (request, response) => {
             }
             console.log("Insert db _id:" + result.insertedId + "\n");
             // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
-            var combinedResponse = "{\"id\":\"" + result.insertedId + "\",\"t\":\"" + Date.now() + "\"}";
-            console.log("response string: " + combinedResponse);
-            var myObj = JSON.parse(combinedResponse);
+            //var combinedResponse = "{\"id\":\"" + result.insertedId + "\",\"t\":\"" + Date.now() + "\"}";
+            var combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
+            
+            var json = JSON.parse(combinedResponse);
 
-            return response.send(myObj);
+            return response.send(json);
         });
     } catch (e) {
         console.error("Error parsing incoming request: ", e);
