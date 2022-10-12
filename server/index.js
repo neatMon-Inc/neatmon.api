@@ -133,7 +133,6 @@ app.post("/api/device/:p_guid", async (request, response) => {
     // Let's go through the data in the value (v) array and dump to console for reference
     if (request.body.v) {
     // if (true) {
-        var hours = [];
         for (var ikey of Object.keys(doc.v)) {
             console.log(ikey + "->" + request.body.v[ikey]);
 
@@ -149,104 +148,28 @@ app.post("/api/device/:p_guid", async (request, response) => {
                 //     console.log(keyName + ': ' + (doc.v[ikey])[keyName].ts);
                 // }
 
-                //var currentDate = new Date((doc.v[ikey])[keyName].ts);
-                var currentDate = new Date((doc.v[ikey])[keyName].ts);
-                var resetDate = currentDate;
-                resetDate.setMinutes(0,0,0);
 
-                var currentHourEpoch = resetDate.getTime();
-                var now = Date.now();
-                console.log("currentDate: " + currentDate.toISOString());
-                console.log("resetDate: " + resetDate.toISOString());
-                console.log("hours[ikey]: " + hours[ikey]);
+                // create new timeseries documents and insert them into the docArray. 
+                // Each doc will later be inserted into the new timeseries db collection
+                var metaString1 = "{\"guid\": \"" + request.params.p_guid + "\", \"sensor\": \"" +  ikey + "\", \"type\": \"t\"}";
+                var metaString2 = "{\"guid\": \"" + request.params.p_guid + "\", \"sensor\": \"" +  ikey + "\", \"type\": \"h\"}";
+                var metadata1 = JSON.parse(metaString1);
+                var metadata2 = JSON.parse(metaString2);
+                var date = new Date((doc.v[ikey])[keyName].ts);
+                var doc1 = {
+                    "metadata": metadata1,
+                    "timestamp": date,
+                    "data": (doc.v[ikey])[keyName].t
+                };
+                var doc2 = {
+                    "metadata": metadata2,
+                    "timestamp": date,
+                    "data": (doc.v[ikey])[keyName].h
+                };
 
-                // beginning of the for loops, so create a new timeseries document
-                if (hours[ikey] == null) {
-                    hours[ikey] = currentHourEpoch;
-                    // create new timeseries documents and insert them into the docArray. 
-                    // Each doc will later be inserted into the new timeseries db collection
-                    var metaString1 = "{\"guid\": \"" + request.params.p_guid + "\", \"sensor\": \"" +  ikey + "\", \"type\": \"t\"}";
-                    var metaString2 = "{\"guid\": \"" + request.params.p_guid + "\", \"sensor\": \"" +  ikey + "\", \"type\": \"h\"}";
-                    var metadata1 = JSON.parse(metaString1);
-                    var metadata2 = JSON.parse(metaString2);
-                    // var date = new Date();
-                    doc1 = {
-                        "metadata": metadata1,
-                        "timestamp": currentHourEpoch,
-                        "data": []
-                    };
-                    doc2 = {
-                        "metadata": metadata2,
-                        "timestamp": currentHourEpoch,
-                        "data": []
-                    };
-
-                    doc1.data.push((doc.v[ikey])[keyName].t);
-                    doc2.data.push((doc.v[ikey])[keyName].h);
-                    // console.log("doc1" + JSON.stringify(doc1));
-                    // console.log("doc2" + JSON.stringify(doc2));
-                }
-                else if (currentDate.getHours() != hours[ikey]) {
-                    //push the documents into the docArray, which will be pushed into mongo
-                    docArray.push(doc1);
-                    docArray.push(doc2);
-
-                    //set the new current hour of the next document
-                    hours[ikey] = currentHourEpoch;
-
-                    // create new timeseries documents and insert them into the docArray. 
-                    // Each doc will later be inserted into the new timeseries db collection
-                    var metaString1 = "{\"guid\": \"" + request.params.p_guid + "\", \"sensor\": \"" +  ikey + "\", \"type\": \"t\"}";
-                    var metaString2 = "{\"guid\": \"" + request.params.p_guid + "\", \"sensor\": \"" +  ikey + "\", \"type\": \"h\"}";
-                    var metadata1 = JSON.parse(metaString1);
-                    var metadata2 = JSON.parse(metaString2);
-                    // var date = new Date();
-                    doc1 = {
-                        "metadata": metadata1,
-                        "timestamp": currentHourEpoch,
-                        "data": []
-                    };
-                    doc2 = {
-                        "metadata": metadata2,
-                        "timestamp": currentHourEpoch,
-                        "data": []
-                    };
-
-                    doc1.data.push((doc.v[ikey])[keyName].t);
-                    doc2.data.push((doc.v[ikey])[keyName].h);
-
-                }
-                else {
-                    // we are still in the same hour of the current doc, so just push the data into the array
-                    doc1.data.push((doc.v[ikey])[keyName].t);
-                    doc2.data.push((doc.v[ikey])[keyName].h);
-                }
-                // // create new timeseries documents and insert them into the docArray. 
-                // // Each doc will later be inserted into the new timeseries db collection
-                // var metaString1 = "{\"guid\": \"" + request.params.p_guid + "\", \"sensor\": \"" +  ikey + "\", \"type\": \"t\"}";
-                // var metaString2 = "{\"guid\": \"" + request.params.p_guid + "\", \"sensor\": \"" +  ikey + "\", \"type\": \"h\"}";
-                // var metadata1 = JSON.parse(metaString1);
-                // var metadata2 = JSON.parse(metaString2);
-                // var date = new Date();
-                // var doc1 = {
-                //     "metadata": metadata1,
-                //     "timestamp": date.getTime(),
-                //     "data": (doc.v[ikey])[keyName].t
-                // };
-                // var doc2 = {
-                //     "metadata": metadata2,
-                //     "timestamp": date.getTime(),
-                //     "data": (doc.v[ikey])[keyName].h
-                // };
-                // // console.log("doc1" + JSON.stringify(doc1));
-                // // console.log("doc2" + JSON.stringify(doc2));
-
-                // docArray.push(doc1);
-                // docArray.push(doc2);
+                docArray.push(doc1);
+                docArray.push(doc2);
             }
-
-            docArray.push(doc1);
-            docArray.push(doc2);
         }
     }
 
@@ -255,22 +178,19 @@ app.post("/api/device/:p_guid", async (request, response) => {
 
     // Insert adds the _id to the doc.
     try {
-        if (docArray.length > 0) {
+        if (docArray.length > 0) {     
             await collection.insertMany(docArray, (error, result) => {
                 if (error) {
                     return response.status(500).send(error);
                 }
                 console.log("Insert db _id:" + result.insertedId + "\n");
                 // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
-                //var combinedResponse = "{\"id\":\"" + result.insertedId + "\",\"t\":\"" + Date.now() + "\"}";
                 var combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
                 
                 var json = JSON.parse(combinedResponse);
     
                 return response.send(json);
             });
-            //empty the array after inserting
-            docArray = [];
         }
         
     } catch (e) {
@@ -362,9 +282,3 @@ app.listen(5000, async () => {
     }
     
 });
-
-function convert(t) {
-  const dt = new Date(t);
-  const hr = dt.getUTCHours();
-  const m = "0" + dt.getUTCMinutes();
-}
