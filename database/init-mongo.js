@@ -4,7 +4,7 @@
     License: MIT
 */
 
-const DATABASE_NAME = 'neatmon';
+const DATABASE_NAME = 'neatmon_dev';
 const DATABASE_COLLECTION = 'device-data';
 
 //////////////////////////////////////////////
@@ -17,7 +17,7 @@ db.createUser({
     roles: [
         {
             role: "readWrite",
-            db: "neatmon"
+            db: "neatmon_dev"
         }
     ]
 });
@@ -25,10 +25,10 @@ db.createUser({
 //////////////////////////////////////////////
 //// CREATE A COLLECTION                //////
 //////////////////////////////////////////////
-db.createCollection('device-data', { capped:true, size:3000000000 });
+// db.createCollection('device-data', { capped:true, size:3000000000 });
 
 db.createCollection(
-    "weather",
+    "devicedatas",
     {
        timeseries: {
           timeField: "timestamp",

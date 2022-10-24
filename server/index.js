@@ -28,19 +28,19 @@ console.log("Connecting with User: " + MONGO_DATABASE_EDITOR_USER);
 console.log("pword: " + MONGO_DATABASE_EDITOR_PASSWORD);
 
 // Add the protocol to the connection URL
-if (FROM_NEATMON_IO !== 'true') {
-    CONNECTION_URL = "mongodb://" + MONGO_DATABASE_EDITOR_USER + ":" + MONGO_DATABASE_EDITOR_PASSWORD + "@" + CONNECTION_URL + "/" + DATABASE_NAME;
-}
+// if (FROM_NEATMON_IO !== 'true') {
+//     CONNECTION_URL = "mongodb://" + MONGO_DATABASE_EDITOR_USER + ":" + MONGO_DATABASE_EDITOR_PASSWORD + "@" + CONNECTION_URL + "/" + DATABASE_NAME;
+// }
 
 
 console.log("DB string " + CONNECTION_URL);
 
-var app = Express();
+let app = Express();
 app.use(BodyParser.urlencoded({ extended: true }));
 app.use(BodyParser.json());
 app.use(BodyParser.raw());
 
-var database, collection;
+let database, collection;
 
 //////////////////////////////////////////////////////////
 //// FUNCTIONS                                      //////
@@ -75,8 +75,8 @@ app.post("/api/device/:p_guid", async (request, response) => {
     // If it is desired to maintain a separate record of when the data is received as opposed to 
     // recorded then consider the code below for a starting point.  Add the m_date to the doc object
     // too.
-    var now = new Date(); // Get the date/time
-    var m_date = new Date(now.toISOString()); // Convert to ISO format
+    let now = new Date(); // Get the date/time
+    let m_date = new Date(now.toISOString()); // Convert to ISO format
 
     console.log("\n" + m_date + " - Post req from " + request.ip + " || GUID:" + request.params.p_guid + "; ID:" + request.body.id);
 
@@ -86,7 +86,7 @@ app.post("/api/device/:p_guid", async (request, response) => {
     // The incoming post can either be the full GUID string, or the shortened string
     // To reduce payload size the GUID will be shortened to the last 5 digits in the body of the post
 
-    var m_guid = request.body.id;
+    let m_guid = request.body.id;
 
     if (request.body.id.length == 5) { // short string provided
         m_guid = request.body.id;
@@ -128,75 +128,69 @@ app.post("/api/device/:p_guid", async (request, response) => {
     }
 
     //create array for new time series documents
-    var docArray = [];
+    let docArray = [];
 
     // Let's go through the data in the value (v) array and dump to console for reference
     if (request.body.v) {
-    // if (true) {
-        for (var ikey of Object.keys(doc.v)) {
-            console.log(ikey + "->" + request.body.v[ikey]);
+        const timestamps = []
+        Object.keys(doc.v).forEach((sensor) => {
+            doc.v[sensor].forEach((entry) => {
+                const timestamp = entry.ts
+                timestamps.push(new Date(timestamp))
+                Object.keys(entry).forEach((type) => {
+                    if(type !== 'ts'){
+                        docArray.push({
+                            metadata: {
+                                guid: doc.guid,
+                                sensor: sensor,
+                                type: type,
+                            },
+                            timestamp: new Date(timestamp),
+                            data: entry[type]
+                        })
+                    }
+                })
+            })
+        })
 
-            var doc1 = null;
-            var doc2 = null;
+        let collisions = collection.find({'timestamp': {'$in': timestamps}, 'metadata.guid': doc.guid})
+        let final_doc_array = []
+        collisions.forEach((document) => {
+            final_doc_array = docArray.filter((incoming) => {
+                const foundCollision = incoming.timestamp.getTime() === document.timestamp.getTime() && document.metadata.sensor === incoming.metadata.sensor && document.metadata.type === incoming.metadata.type
+                return foundCollision
+            })
 
-            for (var keyName in doc.v[ikey]) {
-                // console.log(keyName + ': ' + (request.body.v[ikey])[keyName]);
-                // console.log(keyName + ': ' + (doc.v[ikey])[keyName].t);
-                // console.log(keyName + ': ' + (doc.v[ikey])[keyName].h);
-                // if ((doc.v[ikey])[keyName].ts < (now - 1000)){
-                //     console.log("TIME NOW: " + Date.now());
-                //     console.log(keyName + ': ' + (doc.v[ikey])[keyName].ts);
-                // }
-
-
-                // create new timeseries documents and insert them into the docArray. 
-                // Each doc will later be inserted into the new timeseries db collection
-                var metaString1 = "{\"guid\": \"" + request.params.p_guid + "\", \"sensor\": \"" +  ikey + "\", \"type\": \"t\"}";
-                var metaString2 = "{\"guid\": \"" + request.params.p_guid + "\", \"sensor\": \"" +  ikey + "\", \"type\": \"h\"}";
-                var metadata1 = JSON.parse(metaString1);
-                var metadata2 = JSON.parse(metaString2);
-                var date = new Date((doc.v[ikey])[keyName].ts);
-                var doc1 = {
-                    "metadata": metadata1,
-                    "timestamp": date,
-                    "data": (doc.v[ikey])[keyName].t
-                };
-                var doc2 = {
-                    "metadata": metadata2,
-                    "timestamp": date,
-                    "data": (doc.v[ikey])[keyName].h
-                };
-
-                docArray.push(doc1);
-                docArray.push(doc2);
-            }
-        }
-    }
-
-    console.log("docArray contents:");
-    console.log(docArray);
-
-    // Insert adds the _id to the doc.
-    try {
-        if (docArray.length > 0) {     
-            await collection.insertMany(docArray, (error, result) => {
-                if (error) {
-                    return response.status(500).send(error);
-                }
-                console.log("Insert db _id:" + result.insertedId + "\n");
-                // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
-                var combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
-                
-                var json = JSON.parse(combinedResponse);
-    
-                return response.send(json);
-            });
-        }
+        })
+        try {
+            if (final_doc_array.length > 0) {  
+                console.log("docArray contents:");
+                console.log(final_doc_array);   
+                await collection.insertMany(docArray, (error, result) => {
+                    if (error) {
+                        return response.status(500).send(error);
+                    }
+                    console.log("Insert db _id:" + result.insertedId + "\n");
+                    // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
+                    let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
+                    
+                    let json = JSON.parse(combinedResponse);
         
-    } catch (e) {
-        console.error("Error parsing incoming request: ", e);
-        return response.status(500).send("Error inserting data into collection");
+                    return response.send(json);
+                });
+            }else{
+                return response.send("All values were duplicates, nothing was inserted.")
+            }
+            
+        } catch (e) {
+            console.error("Error parsing incoming request: ", e);
+            return response.status(500).send("Error inserting data into collection");
+        }
     }
+
+    // console.log(docArray);
+    
+    // Insert adds the _id to the doc.
 
 
 });
@@ -225,8 +219,8 @@ app.get("/api/status", async (request, response) => {
 app.get("/api/device/status/:m_guid", async (request, response) => {
     console.log("Received a data request for GUID status: " + request.params.m_guid);
 
-    var query = { 'guid': request.params.m_guid }; // look for all documents/data with this guid
-    var sort = { 'd': -1 }; // show data ascending according to the recorded date (d)
+    let query = { 'guid': request.params.m_guid }; // look for all documents/data with this guid
+    let sort = { 'd': -1 }; // show data ascending according to the recorded date (d)
     try{
         await collection.find(query).sort(sort).toArray(function (error, result) {
             if (error) {
@@ -266,8 +260,9 @@ app.get("/api/device/data/:postId", async (request, response) => {
 /////   DATABASE CONNECTOR                          /////
 /////////////////////////////////////////////////////////
 app.listen(5000, async () => {
+    console.log("Connection: ", CONNECTION_URL)
     try{
-        MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true }, (error, client) => {
+        MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true, tls: true }, (error, client) => {
             if (error) {
                 throw error;
             }
