@@ -158,7 +158,7 @@ app.post("/api/device/:p_guid", async (request, response) => {
         collisions.forEach((document) => {
             final_doc_array = docArray.filter((incoming) => {
                 const foundCollision = incoming.timestamp.getTime() === document.timestamp.getTime() && document.metadata.sensor === incoming.metadata.sensor && document.metadata.type === incoming.metadata.type
-                return foundCollision
+                return !foundCollision
             })
 
         })
