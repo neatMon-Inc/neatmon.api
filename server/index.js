@@ -153,15 +153,15 @@ app.post("/api/device/:p_guid", async (request, response) => {
             })
         })
 
-        let collisions = collection.find({'timestamp': {'$in': timestamps}, 'metadata.guid': doc.guid})
-        let final_doc_array = []
-        collisions.forEach((document) => {
-            final_doc_array = docArray.filter((incoming) => {
-                const foundCollision = incoming.timestamp.getTime() === document.timestamp.getTime() && document.metadata.sensor === incoming.metadata.sensor && document.metadata.type === incoming.metadata.type
-                return !foundCollision
-            })
-
-        })
+        // let collisions = collection.find({'timestamp': {'$in': timestamps}, 'metadata.guid': doc.guid})
+        // let final_doc_array = []
+        // collisions.forEach((document) => {
+        //     final_doc_array = docArray.filter((incoming) => {
+        //         const foundCollision = incoming.timestamp.getTime() === document.timestamp.getTime() && document.metadata.sensor === incoming.metadata.sensor && document.metadata.type === incoming.metadata.type
+        //         return !foundCollision
+        //     })
+        // console.log(docArray)
+        // })
         try {
             // if (final_doc_array.length > 0) {  
             //     console.log("docArray contents:");
@@ -181,12 +181,13 @@ app.post("/api/device/:p_guid", async (request, response) => {
             // }else{
             //     return response.send("All values were duplicates, nothing was inserted.")
             // }
-
             await collection.insertMany(docArray, (error, result) => {
                 if (error) {
                     return response.status(500).send(error);
                 }
-                console.log("Insert db _id:" + result.insertedId + "\n");
+                Object.values(result.insertedIds).forEach((id) => {
+                    console.log("Insert db _id:" + id);
+                })
                 // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
                 let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
                 
