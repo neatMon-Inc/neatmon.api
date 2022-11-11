@@ -163,24 +163,37 @@ app.post("/api/device/:p_guid", async (request, response) => {
 
         })
         try {
-            if (final_doc_array.length > 0) {  
-                console.log("docArray contents:");
-                console.log(final_doc_array);   
-                await collection.insertMany(docArray, (error, result) => {
-                    if (error) {
-                        return response.status(500).send(error);
-                    }
-                    console.log("Insert db _id:" + result.insertedId + "\n");
-                    // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
-                    let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
+            // if (final_doc_array.length > 0) {  
+            //     console.log("docArray contents:");
+            //     console.log(final_doc_array);   
+                // await collection.insertMany(docArray, (error, result) => {
+                //     if (error) {
+                //         return response.status(500).send(error);
+                //     }
+                //     console.log("Insert db _id:" + result.insertedId + "\n");
+                //     // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
+                //     let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
                     
-                    let json = JSON.parse(combinedResponse);
+                //     let json = JSON.parse(combinedResponse);
         
-                    return response.send(json);
-                });
-            }else{
-                return response.send("All values were duplicates, nothing was inserted.")
-            }
+                //     return response.send(json);
+                // });
+            // }else{
+            //     return response.send("All values were duplicates, nothing was inserted.")
+            // }
+
+            await collection.insertMany(docArray, (error, result) => {
+                if (error) {
+                    return response.status(500).send(error);
+                }
+                console.log("Insert db _id:" + result.insertedId + "\n");
+                // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
+                let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
+                
+                let json = JSON.parse(combinedResponse);
+    
+                return response.send(json);
+            });
             
         } catch (e) {
             console.error("Error parsing incoming request: ", e);
@@ -267,6 +280,7 @@ app.listen(5000, async () => {
                 throw error;
             }
             database = client.db(DATABASE_NAME);
+            console.log(DATABASE_COLLECTION)
             collection = database.collection(DATABASE_COLLECTION); // data storage
             // collection = database.collection("device-data");
             unit_configuration = database.collection(DATABASE_CONFIG); // password storage
