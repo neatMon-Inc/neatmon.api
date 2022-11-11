@@ -139,15 +139,29 @@ app.post("/api/device/:p_guid", async (request, response) => {
                 timestamps.push(new Date(timestamp))
                 Object.keys(entry).forEach((type) => {
                     if(type !== 'ts'){
-                        docArray.push({
-                            metadata: {
-                                guid: doc.guid,
-                                sensor: sensor,
-                                type: type,
-                            },
-                            timestamp: new Date(timestamp),
-                            data: entry[type]
-                        })
+                        if(typeof entry[type] === 'object'){
+                            entry[type].forEach((dataPoint, index) => {
+                                docArray.push({
+                                    metadata: {
+                                        guid: doc.guid,
+                                        sensor: sensor,
+                                        type: type + ':' + index,
+                                    },
+                                    timestamp: new Date(timestamp * 1000),
+                                    data: dataPoint
+                                })
+                            })
+                        }else{
+                            docArray.push({
+                                metadata: {
+                                    guid: doc.guid,
+                                    sensor: sensor,
+                                    type: type,
+                                },
+                                timestamp: new Date(timestamp * 1000),
+                                data: entry[type]
+                            })
+                        }
                     }
                 })
             })
