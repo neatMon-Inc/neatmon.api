@@ -110,7 +110,7 @@ app.post("/api/device/:p_guid", async (request, response) => {
     // }
     // End password checking
 
-    console.log("Post content: ");
+    // console.log("Post content: ");
     console.log("GUID/ID: " + request.params.p_guid);
     console.log("HW: " + request.body.hw); // not included in every post
     console.log("FW: " + request.body.fw); // not included in every post
@@ -133,38 +133,48 @@ app.post("/api/device/:p_guid", async (request, response) => {
     // Let's go through the data in the value (v) array and dump to console for reference
     if (request.body.v) {
         const timestamps = []
-        Object.keys(doc.v).forEach((sensor) => {
-            doc.v[sensor].forEach((entry) => {
-                const timestamp = entry.ts
-                timestamps.push(new Date(timestamp))
-                Object.keys(entry).forEach((type) => {
-                    if(type !== 'ts'){
-                        if(typeof entry[type] === 'object'){
-                            entry[type].forEach((dataPoint, index) => {
+        Object.keys(doc.v).forEach(async (sensor) => {
+            if(sensor === 'sys'){
+                const results = await database.collection('devices').updateOne({'serial': doc.guid}, {
+                    $set: {
+                        lat: doc.v[sensor][0].loc[0],
+                        long: doc.v[sensor][0].loc[1]
+                    }
+                })
+                console.log(`Updated device location to ${doc.v[sensor][0].loc[0]}, ${doc.v[sensor][0].loc[1]}`)
+            }else{
+                doc.v[sensor].forEach((entry) => {
+                    const timestamp = entry.ts
+                    timestamps.push(new Date(timestamp))
+                    Object.keys(entry).forEach((type) => {
+                        if(type !== 'ts'){
+                            if(typeof entry[type] === 'object'){
+                                entry[type].forEach((dataPoint, index) => {
+                                    docArray.push({
+                                        metadata: {
+                                            guid: doc.guid,
+                                            sensor: sensor,
+                                            type: type + ':' + index,
+                                        },
+                                        timestamp: new Date(timestamp * 1000),
+                                        data: dataPoint
+                                    })
+                                })
+                            }else{
                                 docArray.push({
                                     metadata: {
                                         guid: doc.guid,
                                         sensor: sensor,
-                                        type: type + ':' + index,
+                                        type: type,
                                     },
                                     timestamp: new Date(timestamp * 1000),
-                                    data: dataPoint
+                                    data: entry[type]
                                 })
-                            })
-                        }else{
-                            docArray.push({
-                                metadata: {
-                                    guid: doc.guid,
-                                    sensor: sensor,
-                                    type: type,
-                                },
-                                timestamp: new Date(timestamp * 1000),
-                                data: entry[type]
-                            })
+                            }
                         }
-                    }
+                    })
                 })
-            })
+            }
         })
 
         // let collisions = collection.find({'timestamp': {'$in': timestamps}, 'metadata.guid': doc.guid})
