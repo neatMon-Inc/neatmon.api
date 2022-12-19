@@ -10,4 +10,3 @@ EXPOSE 5000
 RUN npm install -g nodemon
 RUN npm install
 
-ENTRYPOINT ["nodemon", "/usr/src/app/index.js"]

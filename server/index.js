@@ -11,6 +11,8 @@ const Express = require("express");
 const BodyParser = require("body-parser");
 const MongoClient = require("mongodb").MongoClient;
 const ObjectId = require("mongodb").ObjectID;
+const bull = require('bull');
+const queue = new bull('data-queue', 'redis://redis:6379')
 // const fetch = require('isomorphic-fetch')
 
 INSIDE_NEATMON = process.env.INSIDE_NEATMON
@@ -72,6 +74,8 @@ async function checkPword(p_pword, p_guid) {
 //////////////////////////////////////////////////////////
 app.post("/api/device/:p_guid", async (request, response) => {
 
+
+    
     // If it is desired to maintain a separate record of when the data is received as opposed to 
     // recorded then consider the code below for a starting point.  Add the m_date to the doc object
     // too.
@@ -127,55 +131,57 @@ app.post("/api/device/:p_guid", async (request, response) => {
         "v": request.body.v
     }
 
+    const job = await queue.add(doc)
+
     //create array for new time series documents
     let docArray = [];
 
     // Let's go through the data in the value (v) array and dump to console for reference
     if (request.body.v) {
-        const timestamps = []
-        Object.keys(doc.v).forEach(async (sensor) => {
-            if(sensor === 'sys'){
-                const results = await database.collection('devices').updateOne({'serial': doc.guid}, {
-                    $set: {
-                        lat: doc.v[sensor][0].loc[0],
-                        long: doc.v[sensor][0].loc[1]
-                    }
-                })
-                console.log(`Updated device location to ${doc.v[sensor][0].loc[0]}, ${doc.v[sensor][0].loc[1]}`)
-            }else{
-                doc.v[sensor].forEach((entry) => {
-                    const timestamp = entry.ts
-                    timestamps.push(new Date(timestamp))
-                    Object.keys(entry).forEach((type) => {
-                        if(type !== 'ts'){
-                            if(typeof entry[type] === 'object'){
-                                entry[type].forEach((dataPoint, index) => {
-                                    docArray.push({
-                                        metadata: {
-                                            guid: doc.guid,
-                                            sensor: sensor,
-                                            type: type + ':' + index,
-                                        },
-                                        timestamp: new Date(timestamp * 1000),
-                                        data: dataPoint
-                                    })
-                                })
-                            }else{
-                                docArray.push({
-                                    metadata: {
-                                        guid: doc.guid,
-                                        sensor: sensor,
-                                        type: type,
-                                    },
-                                    timestamp: new Date(timestamp * 1000),
-                                    data: entry[type]
-                                })
-                            }
-                        }
-                    })
-                })
-            }
-        })
+        // const timestamps = []
+        // Object.keys(doc.v).forEach(async (sensor) => {
+        //     if(sensor === 'sys'){
+        //         // const results = await database.collection('devices').updateOne({'serial': doc.guid}, {
+        //         //     $set: {
+        //         //         lat: doc.v[sensor][0].loc[0],
+        //         //         long: doc.v[sensor][0].loc[1]
+        //         //     }
+        //         // })
+        //         console.log(`Updated device location to ${doc.v[sensor][0].loc[0]}, ${doc.v[sensor][0].loc[1]}`)
+        //     }else{
+        //         doc.v[sensor].forEach((entry) => {
+        //             const timestamp = entry.ts
+        //             timestamps.push(new Date(timestamp))
+        //             Object.keys(entry).forEach((type) => {
+        //                 if(type !== 'ts'){
+        //                     if(typeof entry[type] === 'object'){
+        //                         entry[type].forEach((dataPoint, index) => {
+        //                             docArray.push({
+        //                                 metadata: {
+        //                                     guid: doc.guid,
+        //                                     sensor: sensor,
+        //                                     type: type + ':' + index,
+        //                                 },
+        //                                 timestamp: new Date(timestamp * 1000),
+        //                                 data: dataPoint
+        //                             })
+        //                         })
+        //                     }else{
+        //                         docArray.push({
+        //                             metadata: {
+        //                                 guid: doc.guid,
+        //                                 sensor: sensor,
+        //                                 type: type,
+        //                             },
+        //                             timestamp: new Date(timestamp * 1000),
+        //                             data: entry[type]
+        //                         })
+        //                     }
+        //                 }
+        //             })
+        //         })
+        //     }
+        // })
 
         // let collisions = collection.find({'timestamp': {'$in': timestamps}, 'metadata.guid': doc.guid})
         // let final_doc_array = []
@@ -205,20 +211,20 @@ app.post("/api/device/:p_guid", async (request, response) => {
             // }else{
             //     return response.send("All values were duplicates, nothing was inserted.")
             // }
-            await collection.insertMany(docArray, (error, result) => {
-                if (error) {
-                    return response.status(500).send(error);
-                }
-                Object.values(result.insertedIds).forEach((id) => {
-                    console.log("Insert db _id:" + id);
-                })
-                // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
-                let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
+            // await collection.insertMany(docArray, (error, result) => {
+            //     if (error) {
+            //         return response.status(500).send(error);
+            //     }
+            //     Object.values(result.insertedIds).forEach((id) => {
+            //         console.log("Insert db _id:" + id);
+            //     })
+            //     // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
+            //     let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
                 
-                let json = JSON.parse(combinedResponse);
+            //     let json = JSON.parse(combinedResponse);
     
-                return response.send(json);
-            });
+                return response.send(doc);
+            // });
             
         } catch (e) {
             console.error("Error parsing incoming request: ", e);
@@ -300,7 +306,7 @@ app.get("/api/device/data/:postId", async (request, response) => {
 app.listen(5000, async () => {
     console.log("Connection: ", CONNECTION_URL)
     try{
-        MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true, tls: true }, (error, client) => {
+        MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true}, (error, client) => {
             if (error) {
                 throw error;
             }

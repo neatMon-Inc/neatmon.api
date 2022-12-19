@@ -38,5 +38,18 @@ services:
             # - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
             # - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
         restart: always
+        command: "nodemon /usr/src/app/index.js"
         depends_on:
             - "mongoDB"
+            - "redis"
+    worker:
+        build: ./server
+        volumes:
+            - "./server:/usr/src/app"
+        depends_on:
+            - redis
+        command: nodemon /usr/src/app/worker.js
+    redis:
+        image: redis:alpine
+        expose:
+            - "6379"

@@ -19,11 +19,12 @@
   "homepage": "https://github.com/Howe-Neat/neatmon.api#readme",
   "dependencies": {
     "axios": "^0.26.0",
+    "bull": "^4.10.2",
     "dotenv": "^16.0.0",
     "express": "^4.17.3",
+    "got": ">=11.8.5",
     "isomorphic-fetch": "^3.0.0",
     "mongodb": "^4.4.0",
-    "nodemon": "^2.0.15",
-    "got": ">=11.8.5"
+    "nodemon": "^2.0.15"
   }
 }
