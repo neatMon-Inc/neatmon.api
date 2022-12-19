@@ -133,104 +133,104 @@ app.post("/api/device/:p_guid", async (request, response) => {
 
     const job = await queue.add(doc)
 
+    return response.send({jobId:job.id})
     //create array for new time series documents
-    let docArray = [];
 
     // Let's go through the data in the value (v) array and dump to console for reference
-    if (request.body.v) {
-        // const timestamps = []
-        // Object.keys(doc.v).forEach(async (sensor) => {
-        //     if(sensor === 'sys'){
-        //         // const results = await database.collection('devices').updateOne({'serial': doc.guid}, {
-        //         //     $set: {
-        //         //         lat: doc.v[sensor][0].loc[0],
-        //         //         long: doc.v[sensor][0].loc[1]
-        //         //     }
-        //         // })
-        //         console.log(`Updated device location to ${doc.v[sensor][0].loc[0]}, ${doc.v[sensor][0].loc[1]}`)
-        //     }else{
-        //         doc.v[sensor].forEach((entry) => {
-        //             const timestamp = entry.ts
-        //             timestamps.push(new Date(timestamp))
-        //             Object.keys(entry).forEach((type) => {
-        //                 if(type !== 'ts'){
-        //                     if(typeof entry[type] === 'object'){
-        //                         entry[type].forEach((dataPoint, index) => {
-        //                             docArray.push({
-        //                                 metadata: {
-        //                                     guid: doc.guid,
-        //                                     sensor: sensor,
-        //                                     type: type + ':' + index,
-        //                                 },
-        //                                 timestamp: new Date(timestamp * 1000),
-        //                                 data: dataPoint
-        //                             })
-        //                         })
-        //                     }else{
-        //                         docArray.push({
-        //                             metadata: {
-        //                                 guid: doc.guid,
-        //                                 sensor: sensor,
-        //                                 type: type,
-        //                             },
-        //                             timestamp: new Date(timestamp * 1000),
-        //                             data: entry[type]
-        //                         })
-        //                     }
-        //                 }
-        //             })
-        //         })
-        //     }
-        // })
+    // if (request.body.v) {
+    //     // const timestamps = []
+    //     // Object.keys(doc.v).forEach(async (sensor) => {
+    //     //     if(sensor === 'sys'){
+    //     //         // const results = await database.collection('devices').updateOne({'serial': doc.guid}, {
+    //     //         //     $set: {
+    //     //         //         lat: doc.v[sensor][0].loc[0],
+    //     //         //         long: doc.v[sensor][0].loc[1]
+    //     //         //     }
+    //     //         // })
+    //     //         console.log(`Updated device location to ${doc.v[sensor][0].loc[0]}, ${doc.v[sensor][0].loc[1]}`)
+    //     //     }else{
+    //     //         doc.v[sensor].forEach((entry) => {
+    //     //             const timestamp = entry.ts
+    //     //             timestamps.push(new Date(timestamp))
+    //     //             Object.keys(entry).forEach((type) => {
+    //     //                 if(type !== 'ts'){
+    //     //                     if(typeof entry[type] === 'object'){
+    //     //                         entry[type].forEach((dataPoint, index) => {
+    //     //                             docArray.push({
+    //     //                                 metadata: {
+    //     //                                     guid: doc.guid,
+    //     //                                     sensor: sensor,
+    //     //                                     type: type + ':' + index,
+    //     //                                 },
+    //     //                                 timestamp: new Date(timestamp * 1000),
+    //     //                                 data: dataPoint
+    //     //                             })
+    //     //                         })
+    //     //                     }else{
+    //     //                         docArray.push({
+    //     //                             metadata: {
+    //     //                                 guid: doc.guid,
+    //     //                                 sensor: sensor,
+    //     //                                 type: type,
+    //     //                             },
+    //     //                             timestamp: new Date(timestamp * 1000),
+    //     //                             data: entry[type]
+    //     //                         })
+    //     //                     }
+    //     //                 }
+    //     //             })
+    //     //         })
+    //     //     }
+    //     // })
 
-        // let collisions = collection.find({'timestamp': {'$in': timestamps}, 'metadata.guid': doc.guid})
-        // let final_doc_array = []
-        // collisions.forEach((document) => {
-        //     final_doc_array = docArray.filter((incoming) => {
-        //         const foundCollision = incoming.timestamp.getTime() === document.timestamp.getTime() && document.metadata.sensor === incoming.metadata.sensor && document.metadata.type === incoming.metadata.type
-        //         return !foundCollision
-        //     })
-        // console.log(docArray)
-        // })
-        try {
-            // if (final_doc_array.length > 0) {  
-            //     console.log("docArray contents:");
-            //     console.log(final_doc_array);   
-                // await collection.insertMany(docArray, (error, result) => {
-                //     if (error) {
-                //         return response.status(500).send(error);
-                //     }
-                //     console.log("Insert db _id:" + result.insertedId + "\n");
-                //     // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
-                //     let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
+    //     let collisions = collection.find({'timestamp': {'$in': timestamps}, 'metadata.guid': doc.guid})
+    //     let final_doc_array = []
+    //     collisions.forEach((document) => {
+    //         final_doc_array = docArray.filter((incoming) => {
+    //             const foundCollision = incoming.timestamp.getTime() === document.timestamp.getTime() && document.metadata.sensor === incoming.metadata.sensor && document.metadata.type === incoming.metadata.type
+    //             return !foundCollision
+    //         })
+    //     console.log(docArray)
+    //     })
+    //     try {
+    //         if (final_doc_array.length > 0) {  
+    //             console.log("docArray contents:");
+    //             console.log(final_doc_array);   
+    //             await collection.insertMany(docArray, (error, result) => {
+    //                 if (error) {
+    //                     return response.status(500).send(error);
+    //                 }
+    //                 console.log("Insert db _id:" + result.insertedId + "\n");
+    //                 // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
+    //                 let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
                     
-                //     let json = JSON.parse(combinedResponse);
+    //                 let json = JSON.parse(combinedResponse);
         
-                //     return response.send(json);
-                // });
-            // }else{
-            //     return response.send("All values were duplicates, nothing was inserted.")
-            // }
-            // await collection.insertMany(docArray, (error, result) => {
-            //     if (error) {
-            //         return response.status(500).send(error);
-            //     }
-            //     Object.values(result.insertedIds).forEach((id) => {
-            //         console.log("Insert db _id:" + id);
-            //     })
-            //     // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
-            //     let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
+    //                 return response.send(json);
+    //             });
+    //         }else{
+    //             return response.send("All values were duplicates, nothing was inserted.")
+    //         }
+    //         await collection.insertMany(docArray, (error, result) => {
+    //             if (error) {
+    //                 return response.status(500).send(error);
+    //             }
+    //             Object.values(result.insertedIds).forEach((id) => {
+    //                 console.log("Insert db _id:" + id);
+    //             })
+    //             // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
+    //             let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
                 
-            //     let json = JSON.parse(combinedResponse);
+    //             let json = JSON.parse(combinedResponse);
     
-                return response.send(doc);
-            // });
+    //             return response.send(doc);
+    //         });
             
-        } catch (e) {
-            console.error("Error parsing incoming request: ", e);
-            return response.status(500).send("Error inserting data into collection");
-        }
-    }
+    //     } catch (e) {
+    //         console.error("Error parsing incoming request: ", e);
+    //         return response.status(500).send("Error inserting data into collection");
+    //     }
+    // }
 
     // console.log(docArray);
     

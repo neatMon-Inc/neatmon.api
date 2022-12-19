@@ -13,6 +13,7 @@ console.log("Connecting with User: " + MONGO_DATABASE_EDITOR_USER);
 console.log("pword: " + MONGO_DATABASE_EDITOR_PASSWORD);
 let database, collection;
 MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true}, (error, client) => {
+    console.log(CONNECTION_URL)
     if (error) {
         throw error;
     }
@@ -30,12 +31,13 @@ queue.process(async (job, done) => {
     console.log(job.data)
     Object.keys(job.data.v).forEach(async (sensor) => {
         if(sensor === 'sys'){
-            const results = await database.collection('devices').updateOne({'serial': job.guid}, {
+            const results = await database.collection('devices').updateOne({'serial': job.data.guid}, {
                 $set: {
                     lat: job.data.v[sensor][0].loc[0],
                     long: job.data.v[sensor][0].loc[1]
                 }
             })
+            console.log(results)
             console.log(`Updated device location to ${job.data.v[sensor][0].loc[0]}, ${job.data.v[sensor][0].loc[1]}`)
         }else{
             job.data.v[sensor].forEach((entry) => {
@@ -81,10 +83,8 @@ queue.process(async (job, done) => {
     //     })
     // console.log(docArray)
     // })
+    console.log(docArray)
     await collection.insertMany(docArray, (error, result) => {
-        if (error) {
-            return response.status(500).send(error);
-        }
         Object.values(result.insertedIds).forEach((id) => {
             console.log("Insert db _id:" + id);
         })
