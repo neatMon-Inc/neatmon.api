@@ -1,5 +1,6 @@
 require('dotenv').config({});
 const bull = require('bull');
+const { json } = require('express');
 const queue = new bull('data-queue', 'redis://redis:6379');
 const MongoClient = require("mongodb").MongoClient;
 FROM_NEATMON_IO = process.env.FROM_NEATMON_IO
@@ -73,6 +74,46 @@ queue.process(async (job, done) => {
             })
         }
     })
+
+    let device = await database.collection('devices').findOne({"serial": job.data.guid})
+    if (device) {
+        let organization = await database.collection('organizations').findOne({"_id": device.organization})
+        if (organization) {
+            if (organization.webService !== 'None') {
+                
+                let xhr = new XMLHttpRequest();
+                //xhr.open("POST", "https://postman-echo.com/post");
+                xhr.open("POST", "https://reqbin.com/echo/post/json");
+                xhr.setRequestHeader("Accept", "application/json");
+                xhr.setRequestHeader("Content-Type", "application/json");
+
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === 4) {
+                    console.log(xhr.status);
+                    console.log(xhr.responseText);
+                }};
+
+                let testData = `{
+                    "Id": 78912,
+                    "Customer": "Jason Sweet",
+                    "Quantity": 1,
+                    "Price": 18.00
+                  }`;
+
+                let postData = JSON.stringify(testData);
+
+                xhr.send(postData);
+            }
+        }
+        else {
+            console.error('Error finding organization from device in the database.')
+            console.log(device)
+        }
+    }
+    else {
+        console.error('Error finding device in database for forwarding.')
+        console.log(job.data)
+    }
     // let collisions = collection.find({'timestamp': {'$in': timestamps}, 'metadata.guid': job.data.guid})
     // let final_doc_array = []
     // collisions.forEach((document) => {
