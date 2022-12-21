@@ -1,6 +1,7 @@
 require('dotenv').config({});
 const bull = require('bull');
 const { json } = require('express');
+const axios = require('axios');
 const queue = new bull('data-queue', 'redis://redis:6379');
 const MongoClient = require("mongodb").MongoClient;
 FROM_NEATMON_IO = process.env.FROM_NEATMON_IO
@@ -75,34 +76,36 @@ queue.process(async (job, done) => {
         }
     })
 
+    // START DATA FORWARDING CODE
+    console.log('Checking to see if data should be forwarded...')
     let device = await database.collection('devices').findOne({"serial": job.data.guid})
     if (device) {
-        let organization = await database.collection('organizations').findOne({"_id": device.organization})
+        let organization = await database.collection('organizations').findOne({ "name": device.organizationName})
         if (organization) {
             if (organization.webService !== 'None') {
-                
-                let xhr = new XMLHttpRequest();
-                //xhr.open("POST", "https://postman-echo.com/post");
-                xhr.open("POST", "https://reqbin.com/echo/post/json");
-                xhr.setRequestHeader("Accept", "application/json");
-                xhr.setRequestHeader("Content-Type", "application/json");
+                console.log('Data needs to be forwarded.')
+                console.log('Organization\'s forwarding address: ' + organization.webAddress)
 
-                xhr.onreadystatechange = function () {
-                    if (xhr.readyState === 4) {
-                    console.log(xhr.status);
-                    console.log(xhr.responseText);
-                }};
+                // let testData = {
+                //     Id: 78912,
+                //     Customer: "Jason Sweet",
+                //     Quantity: 1,
+                //     Price: 18.00
+                // };
 
-                let testData = `{
-                    "Id": 78912,
-                    "Customer": "Jason Sweet",
-                    "Quantity": 1,
-                    "Price": 18.00
-                  }`;
-
-                let postData = JSON.stringify(testData);
-
-                xhr.send(postData);
+                console.log('Forwarding data...')
+                let res = await axios.post(organization.webAddress, job.data)
+                let data = res.data;
+                if (res.status != 200) {
+                    console.error('Forwarding failed.')
+                }
+                else {
+                    console.log('Forwarding successful!')
+                }
+                console.log(data);       
+            }
+            else {
+                console.log('Data does not need to be forwarded. Continuing...')
             }
         }
         else {
@@ -114,6 +117,9 @@ queue.process(async (job, done) => {
         console.error('Error finding device in database for forwarding.')
         console.log(job.data)
     }
+    // END DATA FORWARDING CODE
+
+
     // let collisions = collection.find({'timestamp': {'$in': timestamps}, 'metadata.guid': job.data.guid})
     // let final_doc_array = []
     // collisions.forEach((document) => {
