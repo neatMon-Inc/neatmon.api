@@ -93,8 +93,24 @@ queue.process(async (job, done) => {
                 //     Price: 18.00
                 // };
 
-                console.log('Forwarding data...')
-                let res = await axios.post(organization.webAddress, job.data)
+                var config, res = null;
+
+                if (organization.secretKey !== null && organization.secretKey !== 'None') {
+                    console.log('Secret key: ' + organization.secretKey)
+                    config = {
+                        headers: {
+                            "x-api-key": organization.secretKey
+                        }
+                    }
+                    console.log('Forwarding data...') 
+                    res = await axios.post(organization.webAddress, job.data, config)
+                }
+                else {
+                    console.log('No secret key found. Proceeding without it.')
+                    console.log('Forwarding data...') 
+                    res = await axios.post(organization.webAddress, job.data)
+                }
+                
                 let data = res.data;
                 if (res.status != 200) {
                     console.error('Forwarding failed.')
