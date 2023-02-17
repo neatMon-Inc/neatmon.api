@@ -1,5 +1,7 @@
 require('dotenv').config({});
 const bull = require('bull');
+const { json } = require('express');
+const axios = require('axios');
 const queue = new bull('data-queue', 'redis://redis:6379');
 const MongoClient = require("mongodb").MongoClient;
 FROM_NEATMON_IO = process.env.FROM_NEATMON_IO
@@ -73,6 +75,67 @@ queue.process(async (job, done) => {
             })
         }
     })
+
+    // START DATA FORWARDING CODE
+    console.log('Checking to see if data should be forwarded...')
+    let device = await database.collection('devices').findOne({"serial": job.data.guid})
+    if (device) {
+        let organization = await database.collection('organizations').findOne({ "name": device.organizationName})
+        if (organization) {
+            if (organization.webService !== 'None') {
+                console.log('Data needs to be forwarded.')
+                console.log('Organization\'s forwarding address: ' + organization.webAddress)
+
+                // let testData = {
+                //     Id: 78912,
+                //     Customer: "Jason Sweet",
+                //     Quantity: 1,
+                //     Price: 18.00
+                // };
+
+                var config, res = null;
+
+                if (organization.secretKey !== null && organization.secretKey !== 'None') {
+                    console.log('Secret key: ' + organization.secretKey)
+                    config = {
+                        headers: {
+                            "x-api-key": organization.secretKey
+                        }
+                    }
+                    console.log('Forwarding data...') 
+                    res = await axios.post(organization.webAddress, job.data, config)
+                }
+                else {
+                    console.log('No secret key found. Proceeding without it.')
+                    console.log('Forwarding data...') 
+                    res = await axios.post(organization.webAddress, job.data)
+                }
+                
+                let data = res.data;
+                if (res.status != 200) {
+                    console.error('Forwarding failed.')
+                }
+                else {
+                    console.log('Forwarding successful!')
+                }
+                console.log(data);       
+            }
+            else {
+                console.log('Data does not need to be forwarded. Continuing...')
+            }
+        }
+        else {
+            console.error('Error finding organization from device in the database.')
+            console.log(device)
+        }
+    }
+    else {
+        console.error('Error finding device in database for forwarding.')
+        console.log(job.data)
+    }
+    // END DATA FORWARDING CODE
+
+
     // let collisions = collection.find({'timestamp': {'$in': timestamps}, 'metadata.guid': job.data.guid})
     // let final_doc_array = []
     // collisions.forEach((document) => {

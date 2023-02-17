@@ -257,6 +257,16 @@ app.get("/api/status", async (request, response) => {
 });
 
 /*
+** Get the current time in timestamp format
+*/
+app.get("/api/status/time", async (request, response) => {
+    let res = {
+        "t": Date.now()
+    }
+    response.send(res);
+});
+
+/*
 ** Get the status of a GUID passed as parameter
 ** Returns all data for a given GUID starting with the latest
 */
