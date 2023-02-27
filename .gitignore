@@ -1,5 +1,5 @@
 server/ca-certificate.crt
-
+.vscode
 # Logs
 logs
 *.log
