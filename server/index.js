@@ -133,7 +133,7 @@ app.post("/api/device/:p_guid", async (request, response) => {
 
     const job = await queue.add(doc)
 
-    return response.send({t: Date.now()})
+    return response.send({t: Math.floor(Date.now() / 1000)})
     //create array for new time series documents
 
     // Let's go through the data in the value (v) array and dump to console for reference
