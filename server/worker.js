@@ -33,14 +33,18 @@ queue.process(async (job, done) => {
     console.log(job.data)
     Object.keys(job.data.v).forEach(async (sensor) => {
         if(sensor === 'sys'){
-            const results = await database.collection('devices').updateOne({'serial': job.data.guid}, {
-                $set: {
-                    lat: job.data.v[sensor][0].loc[0],
-                    long: job.data.v[sensor][0].loc[1]
+            if(job.data.v[sensor][0].loc !== undefined){
+                if(job.data.v[sensor][0].loc[0] !== undefined && job.data.v[sensor][0].loc[1]){
+                    const results = await database.collection('devices').updateOne({'serial': job.data.guid}, {
+                        $set: {
+                            lat: job.data.v[sensor][0].loc[0],
+                            long: job.data.v[sensor][0].loc[1]
+                        }
+                    })
+                    console.log(results)
+                    console.log(`Updated device location to ${job.data.v[sensor][0].loc[0]}, ${job.data.v[sensor][0].loc[1]}`)
                 }
-            })
-            console.log(results)
-            console.log(`Updated device location to ${job.data.v[sensor][0].loc[0]}, ${job.data.v[sensor][0].loc[1]}`)
+            }
         }else{
             job.data.v[sensor].forEach((entry) => {
                 const timestamp = entry.ts
