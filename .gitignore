@@ -1,5 +1,6 @@
 server/ca-certificate.crt
 .vscode
+payload
 # Logs
 logs
 *.log

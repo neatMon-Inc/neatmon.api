@@ -133,7 +133,31 @@ app.post("/api/device/:p_guid", async (request, response) => {
 
     const job = await queue.add(doc)
 
-    return response.send({t: Math.floor(Date.now() / 1000)})
+    const responseCheck = await database.collection('deviceresponses').find({guid: request.params.p_guid}).toArray()
+
+    if(responseCheck.length > 0){
+        const payloadArray = []
+        responseCheck.forEach((deviceResponseObject) => {
+            if(deviceResponseObject.expirationDate > Date.now()){
+                payloadArray.push({
+                    payload: deviceResponseObject.payload,
+                    key: deviceResponseObject.key,
+                })
+            }
+        })
+        if(payloadArray.length > 0){
+            return response.send({
+                t: Math.floor(Date.now() / 1000),
+                events: payloadArray,
+    
+            })
+        } else {
+            return response.send({t: Math.floor(Date.now() / 1000)})
+        }
+    } else {
+        return response.send({t: Math.floor(Date.now() / 1000)})
+    }
+
     //create array for new time series documents
 
     // Let's go through the data in the value (v) array and dump to console for reference
