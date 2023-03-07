@@ -96,33 +96,39 @@ queue.process(async (job, done) => {
                 //     Quantity: 1,
                 //     Price: 18.00
                 // };
+                try{
 
-                var config, res = null;
-
-                if (organization.secretKey !== null && organization.secretKey !== 'None') {
-                    console.log('Secret key: ' + organization.secretKey)
-                    config = {
-                        headers: {
-                            "x-api-key": organization.secretKey
+                    let config, res = null;
+    
+                    if (organization.secretKey !== null && organization.secretKey !== 'None') {
+                        console.log('Secret key: ' + organization.secretKey)
+                        config = {
+                            headers: {
+                                "x-api-key": organization.secretKey
+                            }
                         }
+                        console.log('Forwarding data...') 
+                        res = await axios.post(organization.webAddress, job.data, config)
                     }
-                    console.log('Forwarding data...') 
-                    res = await axios.post(organization.webAddress, job.data, config)
+                    else {
+                        console.log('No secret key found. Proceeding without it.')
+                        console.log('Forwarding data...') 
+                        res = await axios.post(organization.webAddress, job.data)
+                    }
+                    
+                    let data = res.data;
+                    if (res.status != 200) {
+                        console.error('Forwarding failed.')
+                    }
+                    else {
+                        console.log('Forwarding successful!')
+                    }
+                    console.log('DATA')
+                    console.log(data);       
+                } catch(e){
+                    console.log('Something went wrong when forwarding to webhook')
+                    console.log(e)
                 }
-                else {
-                    console.log('No secret key found. Proceeding without it.')
-                    console.log('Forwarding data...') 
-                    res = await axios.post(organization.webAddress, job.data)
-                }
-                
-                let data = res.data;
-                if (res.status != 200) {
-                    console.error('Forwarding failed.')
-                }
-                else {
-                    console.log('Forwarding successful!')
-                }
-                console.log(data);       
             }
             else {
                 console.log('Data does not need to be forwarded. Continuing...')
