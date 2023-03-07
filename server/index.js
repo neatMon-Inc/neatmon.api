@@ -131,16 +131,15 @@ app.post("/api/device/:p_guid", async (request, response) => {
         "v": request.body.v
     }
 
-    const deviceCheck = await database.collection('devices').find({guid: request.params.p_guid}).toArray().length > 0
-    if(deviceCheck){
+    const deviceList = await database.collection('devices').find({serial: doc.guid}).toArray()
+    if(deviceList.length > 0){
         const job = await queue.add(doc)
     } else {
         console.log(`device with GUID ${doc.guid} does not exist, data will not be inserted`)
     }
 
     const responseList = await database.collection('deviceresponses').find({guid: request.params.p_guid}).toArray()
-    const responseCheck =  responseList.length > 0
-    if(responseCheck){
+    if(responseList.length > 0){
         const payloadArray = []
         responseList.forEach((deviceResponseObject) => {
             if(deviceResponseObject.expirationDate > Date.now()){
