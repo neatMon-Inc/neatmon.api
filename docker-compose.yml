@@ -21,6 +21,8 @@ services:
         command: mongod
         restart: always
     neatmon-api:
+        env_file:
+            - ./config/.env
         container_name: api
         hostname: api-server
         volumes:
@@ -35,6 +37,8 @@ services:
             - "redis"
     worker:
         build: ./server
+        env_file:
+            - ./config/.env
         volumes:
             - "./server:/usr/src/app"
         depends_on:
