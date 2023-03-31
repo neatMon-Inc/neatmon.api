@@ -28,7 +28,7 @@ db.createUser({
 // db.createCollection('device-data', { capped:true, size:3000000000 });
 
 db.createCollection(
-    "devicedatas",
+    "devicetimeseriesdatas",
     {
        timeseries: {
           timeField: "timestamp",
