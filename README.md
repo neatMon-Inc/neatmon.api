@@ -1,7 +1,14 @@
+
 # Description
 This is an example for the data services to receive data from neatMon devices.  Allows incoming data to be received, parsed and stored in a database for later retrieval in other apps and services.
 
 For assistance please contact info@neatmon.com or visit the documentation for the API here: https://info.neatmon.com/home/webservices
+
+# NOTE on branch/versions
+The API has been updated to allow worker queues and utilizes the new mongodb timeseries functionality.  
+
+* Version 1 (v1) branch is the most straight forward and recommended as a starting place for new developers modififying the API for use with their own database such as MySQL or otherwise, however this branch is no longer maintained.  
+* WorkerQueue branch is actively maintained and features the time series implementation.
 
 # Getting Started
 After bringing up the neatMon API using the `make` command, the app can be reached from a web browser at the address `http://localhost/api/status` which should show the message: "API Working Sat Feb 26 2022 08:16:20 GMT+0000 (Coordinated Universal Time)" (The current time should be displayed)
