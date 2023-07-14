@@ -86,7 +86,7 @@ queue.process(async (job, done) => {
     if (device) {
         let organization = await database.collection('organizations').findOne({ "name": device.organizationName})
         if (organization) {
-            if (organization.webService !== 'None') {
+            if (organization.webService !== null && organization.webService !== undefined && organization.webService !== 'None' && organization.webService !== 'undefined' && organization.webService !== '') {
                 console.log('Data needs to be forwarded.')
                 console.log('Organization\'s forwarding address: ' + organization.webAddress)
 
@@ -100,7 +100,7 @@ queue.process(async (job, done) => {
 
                     let config, res = null;
     
-                    if (organization.secretKey !== null && organization.secretKey !== 'None') {
+                    if (organization.secretKey !== null && organization.secretKey !== undefined && organization.secretKey !== 'None' && organization.secretKey !== 'undefined' && organization.secretKey !== '') {
                         console.log('Secret key: ' + organization.secretKey)
                         config = {
                             headers: {
@@ -108,12 +108,12 @@ queue.process(async (job, done) => {
                             }
                         }
                         console.log('Forwarding data...') 
-                        res = await axios.post(organization.webAddress, job.data, config)
+                        res = await axios.post(organization.webAddress, job.data.body, config)
                     }
                     else {
                         console.log('No secret key found. Proceeding without it.')
                         console.log('Forwarding data...') 
-                        res = await axios.post(organization.webAddress, job.data)
+                        res = await axios.post(organization.webAddress, job.data.body)
                     }
                     
                     let data = res.data;

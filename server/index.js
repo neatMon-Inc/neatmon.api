@@ -128,7 +128,8 @@ app.post("/api/device/:p_guid", async (request, response) => {
         "hw": m_hw_id,
         "fw": m_fw_id,
         "d": m_date,
-        "v": request.body.v
+        "v": request.body.v,
+        "body": request.body
     }
 
     const deviceList = await database.collection('devices').find({serial: doc.guid}).toArray()
