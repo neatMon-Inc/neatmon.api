@@ -80,55 +80,85 @@ queue.process(async (job, done) => {
         }
     })
 
+    // console.log('Forwarding data...') 
+    // try {
+    //     let address = 'http://147.182.239.29:5000/api/device'
+    //     let newAddress = address + '?id=' + job.data.guid
+    //     console.log(newAddress)
+    //     console.log(JSON.stringify(job.data.body))
+    //     res = await axios.post(newAddress, JSON.stringify(job.data.body), {
+    //         headers: {
+    //             "Content-Type": "application/json",
+    //         }
+    //     })
+
+    //     console.log(res)
+
+    //     if (res.status != 200) {
+    //         console.error('Forwarding failed.')
+    //     }
+    //     else {
+    //         console.log('Forwarding successful!')
+    //     }
+    // }
+    // catch (e) {
+    //     console.log('something went wrong')
+    //     console.log(e)
+    // }
+
     // START DATA FORWARDING CODE
     console.log('Checking to see if data should be forwarded...')
     let device = await database.collection('devices').findOne({"serial": job.data.guid})
     if (device) {
         let organization = await database.collection('organizations').findOne({ "name": device.organizationName})
         if (organization) {
-            if (organization.webService !== null && organization.webService !== undefined && organization.webService !== 'None' && organization.webService !== 'undefined' && organization.webService !== '') {
+            if (organization.webService !== 'None') {
                 console.log('Data needs to be forwarded.')
-                console.log('Organization\'s forwarding address: ' + organization.webAddress)
+                if (organization.webAddress !== '' && organization.webAddress !== null && organization.webAddress !== undefined && organization.webAddress !== 'undefined') {
 
-                // let testData = {
-                //     Id: 78912,
-                //     Customer: "Jason Sweet",
-                //     Quantity: 1,
-                //     Price: 18.00
-                // };
-                try{
+                    let newAddress = organization.webAddress + '?id=' + job.data.guid
+                    console.log('Organization\'s forwarding address: ' + newAddress)
 
-                    let config, res = null;
+                    try{
     
-                    if (organization.secretKey !== null && organization.secretKey !== undefined && organization.secretKey !== 'None' && organization.secretKey !== 'undefined' && organization.secretKey !== '') {
-                        console.log('Secret key: ' + organization.secretKey)
-                        config = {
-                            headers: {
-                                "x-api-key": organization.secretKey
-                            }
+                        let res = null;
+        
+                        if (organization.secretKey !== null && organization.secretKey !== undefined && organization.secretKey !== 'None' && organization.secretKey !== 'undefined' && organization.secretKey !== '') {
+                            console.log('Secret key: ' + organization.secretKey)
+                            console.log('Forwarding data...') 
+                            res = await axios.post(newAddress, JSON.stringify(job.data.body), {
+                                "x-api-key": organization.secretKey,
+                                'Content-Type': 'application/json'
+                            })
                         }
-                        console.log('Forwarding data...') 
-                        res = await axios.post(organization.webAddress, job.data.body, config)
+                        else {
+                            console.log('No secret key found. Proceeding without it.')
+                            console.log('Forwarding data...') 
+                            res = await axios.post(newAddress, JSON.stringify(job.data.body), {
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            })
+                        }
+                        
+                        let data = res.data;
+                        if (res.status != 200) {
+                            console.error('Forwarding failed.')
+                        }
+                        else {
+                            console.log('Forwarding successful!')
+                        }
+                        console.log('DATA')
+                        console.log(data);       
+                    } catch(e){
+                        console.log('Something went wrong when forwarding to webhook')
+                        console.log(e)
                     }
-                    else {
-                        console.log('No secret key found. Proceeding without it.')
-                        console.log('Forwarding data...') 
-                        res = await axios.post(organization.webAddress, job.data.body)
-                    }
-                    
-                    let data = res.data;
-                    if (res.status != 200) {
-                        console.error('Forwarding failed.')
-                    }
-                    else {
-                        console.log('Forwarding successful!')
-                    }
-                    console.log('DATA')
-                    console.log(data);       
-                } catch(e){
-                    console.log('Something went wrong when forwarding to webhook')
-                    console.log(e)
                 }
+                else {
+                    console.log('No forwarding address found. Continuing...')
+                }
+                
             }
             else {
                 console.log('Data does not need to be forwarded. Continuing...')
