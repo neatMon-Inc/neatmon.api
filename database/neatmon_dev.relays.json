@@ -1,0 +1,114 @@
+[{
+  "_id": {
+    "$oid": "620d54c2bd8a610037de6f54"
+  },
+  "title": "Chardonnay",
+  "relay_num": 1,
+  "feedback_range_high": 30,
+  "feedback_range_low": 10,
+  "delay_until_feedback": 15,
+  "feedback_sensor": "relay",
+  "visibility": true,
+  "last_activity": {
+    "$date": "2022-02-16T19:47:14.282Z"
+  },
+  "__v": 0,
+  "device_guid": "437870dc-0984-492f-91c4-42c007621d23",
+  "id": 1,
+  "state": "on"
+},
+{
+  "_id": {
+    "$oid": "620e81d76bf56000379568ce"
+  },
+  "title": "Merlot",
+  "relay_num": 2,
+  "feedback_range_high": 50,
+  "feedback_range_low": 10,
+  "delay_until_feedback": 20,
+  "feedback_sensor": "relay",
+  "visibility": true,
+  "last_activity": {
+    "$date": "2022-02-17T17:11:51.404Z"
+  },
+  "__v": 0,
+  "device_guid": "437870dc-0984-492f-91c4-42c007621d23",
+  "id": 2,
+  "state": "off"
+},
+{
+  "_id": {
+    "$oid": "620f011a2262cb008a6e88ae"
+  },
+  "id": 3,
+  "title": "Pinot Gris",
+  "relay_num": 3,
+  "feedback_range_high": 30,
+  "feedback_range_low": 1,
+  "delay_until_feedback": 25,
+  "feedback_sensor": "relay",
+  "visibility": true,
+  "last_activity": {
+    "$date": "2022-02-18T02:14:50.230Z"
+  },
+  "__v": 0,
+  "device_guid": "437870dc-0984-492f-91c4-42c007621d23",
+  "state": "on"
+},
+{
+  "_id": {
+    "$oid": "620f01436f255900b7fd8d08"
+  },
+  "id": 4,
+  "title": "Pinot Noir",
+  "relay_num": 4,
+  "feedback_range_high": 100,
+  "feedback_range_low": 20,
+  "delay_until_feedback": 40,
+  "feedback_sensor": "relay",
+  "visibility": true,
+  "last_activity": {
+    "$date": "2022-02-18T02:15:31.810Z"
+  },
+  "__v": 0,
+  "device_guid": "437870dc-0984-492f-91c4-42c007621d23",
+  "state": "on"
+},
+{
+  "_id": {
+    "$oid": "620f01749f353f00e4776d51"
+  },
+  "id": 5,
+  "title": "Riseling",
+  "relay_num": 5,
+  "feedback_range_high": 50,
+  "feedback_range_low": 20,
+  "delay_until_feedback": 10,
+  "feedback_sensor": "relay",
+  "visibility": true,
+  "last_activity": {
+    "$date": "2022-02-18T02:16:20.894Z"
+  },
+  "__v": 0,
+  "device_guid": "437870dc-0984-492f-91c4-42c007621d23",
+  "state": "on"
+},
+{
+  "_id": {
+    "$oid": "6233a01a3eea8a0037b2e47d"
+  },
+  "id": 6,
+  "title": "Syrah",
+  "relay_num": 6,
+  "feedback_range_high": 3,
+  "feedback_range_low": 1,
+  "delay_until_feedback": 1,
+  "feedback_sensor": "relay",
+  "visibility": false,
+  "last_activity": {
+    "$date": "2022-03-17T20:54:50.182Z"
+  },
+  "__v": 0,
+  "device_guid": "437870dc-0984-492f-91c4-42c007621d23",
+  "state": "off"
+}]

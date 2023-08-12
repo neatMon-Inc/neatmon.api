@@ -12,6 +12,7 @@ services:
         image: mongo
         volumes:
             - ./database/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+            - ./database:/tmp/data
         ports:
             - "27017:27017"
         environment:

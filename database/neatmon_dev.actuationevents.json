@@ -1,0 +1,110 @@
+[{
+  "_id": {
+    "$oid": "641f62c9dd416d066f86f2c3"
+  },
+  "title": "Pinot Noir",
+  "relay": {
+    "$oid": "620f01436f255900b7fd8d08"
+  },
+  "start_time": {
+    "$date": "2023-03-25T15:15:00.000Z"
+  },
+  "end_time": {
+    "$date": "2023-03-25T15:45:00.000Z"
+  },
+  "group": 4,
+  "id": 1,
+  "status": "waiting",
+  "last_update": {
+    "$date": "2023-03-25T21:08:25.184Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "641f7d0dcb704b1398556a48"
+  },
+  "title": "Chardonnay",
+  "relay": {
+    "$oid": "620d54c2bd8a610037de6f54"
+  },
+  "start_time": {
+    "$date": "2023-03-25T23:45:00.000Z"
+  },
+  "end_time": {
+    "$date": "2023-03-26T00:15:00.000Z"
+  },
+  "group": 1,
+  "id": 6,
+  "status": "waiting",
+  "last_update": {
+    "$date": "2023-03-25T23:00:29.759Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "64231987aac8ce004923f735"
+  },
+  "title": "Test",
+  "relay": {
+    "$oid": "620d54c2bd8a610037de6f54"
+  },
+  "start_time": {
+    "$date": "2023-03-28T20:15:00.000Z"
+  },
+  "end_time": {
+    "$date": "2023-03-28T20:40:00.000Z"
+  },
+  "group": 1,
+  "id": 3,
+  "status": "waiting",
+  "last_update": {
+    "$date": "2023-03-28T16:44:55.008Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6423198daac8ce004923f736"
+  },
+  "title": "Test",
+  "relay": {
+    "$oid": "620d54c2bd8a610037de6f54"
+  },
+  "start_time": {
+    "$date": "2023-03-28T20:15:00.000Z"
+  },
+  "end_time": {
+    "$date": "2023-03-28T20:40:00.000Z"
+  },
+  "group": 1,
+  "id": 8,
+  "status": "waiting",
+  "last_update": {
+    "$date": "2023-03-28T16:45:01.636Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "64246fb70fce2a004937ffc6"
+  },
+  "title": "Chardonnay",
+  "relay": {
+    "$oid": "620d54c2bd8a610037de6f54"
+  },
+  "start_time": {
+    "$date": "2023-03-29T13:30:00.000Z"
+  },
+  "end_time": {
+    "$date": "2023-03-29T14:00:00.000Z"
+  },
+  "group": 1,
+  "id": 5,
+  "status": "waiting",
+  "last_update": {
+    "$date": "2023-03-29T17:04:55.737Z"
+  },
+  "__v": 0
+}]

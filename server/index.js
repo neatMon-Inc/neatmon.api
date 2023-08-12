@@ -139,28 +139,36 @@ app.post("/api/device/:p_guid", async (request, response) => {
         console.log(`device with GUID ${doc.guid} does not exist, data will not be inserted`)
     }
 
-    const responseList = await database.collection('deviceresponses').find({guid: request.params.p_guid}).toArray()
-    if(responseList.length > 0){
-        const payloadArray = []
-        responseList.forEach((deviceResponseObject) => {
-            if(deviceResponseObject.expirationDate > Date.now()){
-                payloadArray.push({
-                    payload: deviceResponseObject.payload,
-                    key: deviceResponseObject.key,
-                })
-            }
+    const relayList = await database.collection('relays').find({device_guid: doc.guid}).toArray()
+    if(relayList.length > 0){
+        const relayIDs = relayList.map((relay) => {
+            return relay._id
         })
-        if(payloadArray.length > 0){
-            return response.send({
-                t: Math.floor(Date.now() / 1000),
-                events: payloadArray,
-    
+        const currentDate = new Date(Date.now())
+        const eventList = await database.collection('actuationevents').find({relay: { $in: relayIDs }, start_time: {$lte: currentDate}, end_time: {$gte: currentDate}}).toArray()
+        const finalCommand = eventList.map((event) => {
+            const relay = relayList.find((relay) => {
+                return event.id === relay.id
             })
-        } else {
-            return response.send({t: Math.floor(Date.now() / 1000)})
-        }
+            const returnObject = {}
+            returnObject[relay.id] = 
+                [
+                    {
+                        fbkhigh: relay.feedback_range_high
+                    },
+                    {
+                        fbklow: relay.feedback_range_low
+                    },
+                    {
+                        dwell: relay.delay_until_feedback
+                    }
+                ]
+            return returnObject
+            
+        })
+        return response.send({ts: Math.floor(Date.now() / 1000), cmd: finalCommand[0]})
     } else {
-        return response.send({t: Math.floor(Date.now() / 1000)})
+        return response.send({ts: Math.floor(Date.now() / 1000)})
     }
 
     //create array for new time series documents
