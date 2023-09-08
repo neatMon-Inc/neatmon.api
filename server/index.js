@@ -169,39 +169,6 @@ app.post("/api/device/:p_guid", async (request, response) => {
         return response.send({ts: Math.floor(Date.now() / 1000)})
     }
 
-
-    // const relayList = await database.collection('relays').find({device_guid: doc.guid}).toArray()
-    // if(relayList.length > 0){
-    //     const relayIDs = relayList.map((relay) => {
-    //         return relay._id
-    //     })
-    //     const currentDate = new Date(Date.now())
-    //     const eventList = await database.collection('actuationevents').find({relay: { $in: relayIDs }, start_time: {$lte: currentDate}, end_time: {$gte: currentDate}}).toArray()
-    //     const finalCommand = eventList.map((event) => {
-    //         const relay = relayList.find((relay) => {
-    //             return event.id === relay.id
-    //         })
-    //         const returnObject = {}
-    //         returnObject[relay.id] = 
-    //             [
-    //                 {
-    //                     fbkhigh: relay.feedback_range_high
-    //                 },
-    //                 {
-    //                     fbklow: relay.feedback_range_low
-    //                 },
-    //                 {
-    //                     dwell: relay.delay_until_feedback
-    //                 }
-    //             ]
-    //         return returnObject
-            
-    //     })
-    //     return response.send({ts: Math.floor(Date.now() / 1000), cmd: finalCommand[0]})
-    // } else {
-    //     return response.send({ts: Math.floor(Date.now() / 1000)})
-    // }
-
     //create array for new time series documents
 
     // Let's go through the data in the value (v) array and dump to console for reference
