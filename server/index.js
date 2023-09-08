@@ -139,37 +139,68 @@ app.post("/api/device/:p_guid", async (request, response) => {
         console.log(`device with GUID ${doc.guid} does not exist, data will not be inserted`)
     }
 
-    const relayList = await database.collection('relays').find({device_guid: doc.guid}).toArray()
-    if(relayList.length > 0){
-        const relayIDs = relayList.map((relay) => {
-            return relay._id
-        })
-        const currentDate = new Date(Date.now())
-        const eventList = await database.collection('actuationevents').find({relay: { $in: relayIDs }, start_time: {$lte: currentDate}, end_time: {$gte: currentDate}}).toArray()
-        const finalCommand = eventList.map((event) => {
-            const relay = relayList.find((relay) => {
-                return event.id === relay.id
+    //grab any controls that are available for device that have not been executed yet
+    const controlList = await database.collection('controls').find({guid: doc.guid, executed: ""}).toArray()
+    //grab a command that needs to be executed on the device
+    const cmd = await database.collection('commands').findOne({guid: doc.guid, executed: ""})
+
+    // console.log(controlList)
+    // console.log(cmd)
+    
+    //if the device has any controls/command, they need to be sent to the device
+    if(controlList.length > 0 || cmd){
+        let finalCommand = {}
+        if (controlList.length > 0) {
+            finalCommand.control = []
+            controlList.forEach((ctrl) => {
+                finalCommand.control.push(ctrl.control)
             })
-            const returnObject = {}
-            returnObject[relay.id] = 
-                [
-                    {
-                        fbkhigh: relay.feedback_range_high
-                    },
-                    {
-                        fbklow: relay.feedback_range_low
-                    },
-                    {
-                        dwell: relay.delay_until_feedback
-                    }
-                ]
-            return returnObject
-            
-        })
-        return response.send({ts: Math.floor(Date.now() / 1000), cmd: finalCommand[0]})
+        }
+        if (cmd) {
+            if (cmd.command.fwu)
+                finalCommand.fwu = cmd.command.fwu
+            if (cmd.command.cfg)
+                finalCommand.cfg = cmd.command.cfg
+        }
+        //return the command to the device
+        return response.send({ts: Math.floor(Date.now() / 1000), cmd: finalCommand})    
     } else {
+        // if there are no controls/command, just send the timestamp
         return response.send({ts: Math.floor(Date.now() / 1000)})
     }
+
+
+    // const relayList = await database.collection('relays').find({device_guid: doc.guid}).toArray()
+    // if(relayList.length > 0){
+    //     const relayIDs = relayList.map((relay) => {
+    //         return relay._id
+    //     })
+    //     const currentDate = new Date(Date.now())
+    //     const eventList = await database.collection('actuationevents').find({relay: { $in: relayIDs }, start_time: {$lte: currentDate}, end_time: {$gte: currentDate}}).toArray()
+    //     const finalCommand = eventList.map((event) => {
+    //         const relay = relayList.find((relay) => {
+    //             return event.id === relay.id
+    //         })
+    //         const returnObject = {}
+    //         returnObject[relay.id] = 
+    //             [
+    //                 {
+    //                     fbkhigh: relay.feedback_range_high
+    //                 },
+    //                 {
+    //                     fbklow: relay.feedback_range_low
+    //                 },
+    //                 {
+    //                     dwell: relay.delay_until_feedback
+    //                 }
+    //             ]
+    //         return returnObject
+            
+    //     })
+    //     return response.send({ts: Math.floor(Date.now() / 1000), cmd: finalCommand[0]})
+    // } else {
+    //     return response.send({ts: Math.floor(Date.now() / 1000)})
+    // }
 
     //create array for new time series documents
 
