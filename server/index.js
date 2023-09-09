@@ -163,10 +163,10 @@ app.post("/api/device/:p_guid", async (request, response) => {
                 finalCommand.cfg = cmd.command.cfg
         }
         //return the command to the device
-        return response.send({ts: Math.floor(Date.now() / 1000), cmd: finalCommand})    
+        return response.send({t: Math.floor(Date.now() / 1000), cmd: finalCommand})    
     } else {
         // if there are no controls/command, just send the timestamp
-        return response.send({ts: Math.floor(Date.now() / 1000)})
+        return response.send({t: Math.floor(Date.now() / 1000)})
     }
 
     //create array for new time series documents
