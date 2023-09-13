@@ -140,9 +140,9 @@ app.post("/api/device/:p_guid", async (request, response) => {
     }
 
     //grab any controls that are available for device that have not been executed yet
-    const controlList = await database.collection('controls').find({guid: doc.guid, executed: ""}).toArray()
+    const controlList = await database.collection('controlQueue').find({guid: doc.guid, executed: ""}).toArray()
     //grab a command that needs to be executed on the device
-    const cmd = await database.collection('commands').findOne({guid: doc.guid, executed: ""})
+    const cmd = await database.collection('commandQueue').findOne({guid: doc.guid, executed: ""})
 
     // console.log(controlList)
     // console.log(cmd)
