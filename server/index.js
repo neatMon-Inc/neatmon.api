@@ -162,9 +162,11 @@ app.post("/api/device/:p_guid", async (request, response) => {
             if (cmd.command.cfg)
                 finalCommand.cfg = cmd.command.cfg
         }
+        console.log({t: Math.floor(Date.now() / 1000), cmd: finalCommand})
         //return the command to the device
         return response.send({t: Math.floor(Date.now() / 1000), cmd: finalCommand})    
     } else {
+        console.log({t: Math.floor(Date.now() / 1000)})
         // if there are no controls/command, just send the timestamp
         return response.send({t: Math.floor(Date.now() / 1000)})
     }
