@@ -8,6 +8,10 @@
 require('dotenv').config({}); // Get env variables
 // const axios = require("axios"); // HTTP Client
 const Express = require("express");
+var http = require('http'),
+    fileSystem = require('fs'),
+    path = require('path');
+const FILE_DIRECTORY = "/usr/src/apiFiles/";
 const BodyParser = require("body-parser");
 const MongoClient = require("mongodb").MongoClient;
 const ObjectId = require("mongodb").ObjectID;
@@ -346,6 +350,31 @@ app.get("/api/device/data/:postId", async (request, response) => {
     }
     
 });
+
+/*
+**  Get a file from the API server (for firmware updates)
+*/
+app.get("/files/:filename", async (request, response) => {
+    
+    console.log("Received a request for the file: " + request.params.filename);
+    try {
+        var filePath = path.join(FILE_DIRECTORY, request.params.filename);
+        var stat = fileSystem.statSync(filePath);
+
+        response.writeHead(200, {
+            'Content-Type': 'application/octet-stream',
+            'Content-Length': stat.size
+        });
+
+        var readStream = fileSystem.createReadStream(filePath);
+        // We replaced all the event handlers with a simple call to readStream.pipe()
+        readStream.pipe(response);
+    }
+    catch (e) {
+        console.log('No file found.');
+        return response.status(404).send("No file found.");
+    }
+})
 
 /////////////////////////////////////////////////////////
 /////   DATABASE CONNECTOR                          /////

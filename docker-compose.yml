@@ -28,6 +28,7 @@ services:
         hostname: api-server
         volumes:
             - "./server:/usr/src/app"
+            - "../apiFolder:/usr/src/apiFiles"
         build: ./server
         ports:
             - "1330:5000"
