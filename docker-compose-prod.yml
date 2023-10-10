@@ -28,7 +28,7 @@ services:
         hostname: api-server
         volumes:
             - "./server:/usr/src/app"
-            - "/opt/howeneat/apiFiles:/usr/src/apiFiles"
+            - "/opt/howeneat/AMN-Firmware:/usr/src/apiFiles"
         build: ./server
         ports:
             - "1330:5000"
