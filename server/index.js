@@ -77,101 +77,105 @@ async function checkPword(p_pword, p_guid) {
 //// POST METHODS                                   //////
 //////////////////////////////////////////////////////////
 app.post("/api/device/:p_guid", async (request, response) => {
+    try {
+        // If it is desired to maintain a separate record of when the data is received as opposed to 
+        // recorded then consider the code below for a starting point.  Add the m_date to the doc object
+        // too.
+        let now = new Date(); // Get the date/time
+        let m_date = new Date(now.toISOString()); // Convert to ISO format
 
+        console.log("\n" + m_date + " - Post req from " + request.ip + " || GUID:" + request.params.p_guid + "; ID:" + request.body.id);
 
-    
-    // If it is desired to maintain a separate record of when the data is received as opposed to 
-    // recorded then consider the code below for a starting point.  Add the m_date to the doc object
-    // too.
-    let now = new Date(); // Get the date/time
-    let m_date = new Date(now.toISOString()); // Convert to ISO format
+        if (!request.body?.id) return response.status(500).send("Bad unit/password"); // No ID included in post!
 
-    console.log("\n" + m_date + " - Post req from " + request.ip + " || GUID:" + request.params.p_guid + "; ID:" + request.body.id);
+        // First check that the GUID is matching
+        // The incoming post can either be the full GUID string, or the shortened string
+        // To reduce payload size the GUID will be shortened to the last 5 digits in the body of the post
 
-    if (!request.body?.id) return response.status(500).send("Bad unit/password"); // No ID included in post!
+        let m_guid = request.body.id;
 
-    // First check that the GUID is matching
-    // The incoming post can either be the full GUID string, or the shortened string
-    // To reduce payload size the GUID will be shortened to the last 5 digits in the body of the post
-
-    let m_guid = request.body.id;
-
-    if (request.body.id.length == 5) { // short string provided
-        m_guid = request.body.id;
-        cutString = request.params.p_guid.length - 5;
-        if (m_guid != request.params.p_guid.substring(cutString)) return response.status(500).send("ShortID Bad unit/password");
-    }
-    else if (request.body.id.length > 5 && request.body.id == request.params.p_guid) m_guid = request.body.id; // Long string for GUID provided
-    else return response.status(500).send("Bad unit/password"); // Catch all for bad guid or undefined guid in post
-    
-    // if ((m_guid_shortened != request.params.p_guid.substring(31)) || (m_guid != request.params.p_guid)) return response.status(500).send("Bad unit/password");
-
-    // The best practice is to include a password check, if the schema doesn't provide this, just comment this out
-    // console.log("Looking up pword for GUID: " + m_guid);
-    // m_pword = request.body.pword;
-    // let pwordCheckResult = await checkPword(m_pword, m_guid);
-    // if (pwordCheckResult) 
-    //     console.log("OK pword");
-    // else {
-    //     console.log("Error with pword");
-    //     return response.status(500).send(error);
-    // }
-    // End password checking
-
-    // console.log("Post content: ");
-    console.log("GUID/ID: " + request.params.p_guid);
-    console.log("HW: " + request.body.hw); // not included in every post
-    console.log("FW: " + request.body.fw); // not included in every post
-
-    // If these are not included in the body, they will not be used in the db insert
-    m_hw_id = request.body.hw;
-    m_fw_id = request.body.fw;
-
-    const doc = {
-        "guid": request.params.p_guid,
-        "hw": m_hw_id,
-        "fw": m_fw_id,
-        "d": m_date,
-        "v": request.body.v,
-        "body": request.body
-    }
-
-    const deviceList = await database.collection('devices').find({serial: doc.guid}).toArray()
-    if(deviceList.length > 0){
-        const job = await queue.add(doc)
-    } else {
-        console.log(`device with GUID ${doc.guid} does not exist, data will not be inserted`)
-    }
-
-    //grab any controls that are available for device that have not been executed yet
-    const controlList = await database.collection('controlQueue').find({guid: doc.guid, executed: ""}).toArray()
-    //grab a command that needs to be executed on the device
-    const cmd = await database.collection('commandQueue').findOne({guid: doc.guid, executed: ""})
-
-    // console.log(controlList)
-    // console.log(cmd)
-    
-    //if the device has any controls/command, they need to be sent to the device
-    if(controlList.length > 0 || cmd){
-        let finalCommand = {}
-        if (controlList.length > 0) {
-            finalCommand.control = []
-            controlList.forEach((ctrl) => {
-                finalCommand.control.push(ctrl.control)
-            })
+        if (request.body.id.length == 5) { // short string provided
+            m_guid = request.body.id;
+            cutString = request.params.p_guid.length - 5;
+            if (m_guid != request.params.p_guid.substring(cutString)) return response.status(500).send("ShortID Bad unit/password");
         }
-        if (cmd) {
-            if (cmd.command.fwu)
-                finalCommand.fwu = cmd.command.fwu
-            if (cmd.command.cfg)
-                finalCommand.cfg = cmd.command.cfg
+        else if (request.body.id.length > 5 && request.body.id == request.params.p_guid) m_guid = request.body.id; // Long string for GUID provided
+        else return response.status(500).send("Bad unit/password"); // Catch all for bad guid or undefined guid in post
+        
+        // if ((m_guid_shortened != request.params.p_guid.substring(31)) || (m_guid != request.params.p_guid)) return response.status(500).send("Bad unit/password");
+
+        // The best practice is to include a password check, if the schema doesn't provide this, just comment this out
+        // console.log("Looking up pword for GUID: " + m_guid);
+        // m_pword = request.body.pword;
+        // let pwordCheckResult = await checkPword(m_pword, m_guid);
+        // if (pwordCheckResult) 
+        //     console.log("OK pword");
+        // else {
+        //     console.log("Error with pword");
+        //     return response.status(500).send(error);
+        // }
+        // End password checking
+
+        // console.log("Post content: ");
+        console.log("GUID/ID: " + request.params.p_guid);
+        console.log("HW: " + request.body.hw); // not included in every post
+        console.log("FW: " + request.body.fw); // not included in every post
+
+        // If these are not included in the body, they will not be used in the db insert
+        m_hw_id = request.body.hw;
+        m_fw_id = request.body.fw;
+
+        const doc = {
+            "guid": request.params.p_guid,
+            "hw": m_hw_id,
+            "fw": m_fw_id,
+            "d": m_date,
+            "v": request.body.v,
+            "body": request.body
         }
-        console.log({t: Math.floor(Date.now() / 1000), cmd: finalCommand})
-        //return the command to the device
-        return response.send({t: Math.floor(Date.now() / 1000), cmd: finalCommand})    
-    } else {
-        console.log({t: Math.floor(Date.now() / 1000)})
-        // if there are no controls/command, just send the timestamp
+
+        const deviceList = await database.collection('devices').find({serial: doc.guid}).toArray()
+        if(deviceList.length > 0){
+            const job = await queue.add(doc)
+        } else {
+            console.log(`device with GUID ${doc.guid} does not exist, data will not be inserted`)
+        }
+
+        //grab any controls that are available for device that have not been executed yet
+        const controlList = await database.collection('controlQueue').find({guid: doc.guid, executed: ""}).toArray()
+        //grab a command that needs to be executed on the device
+        const cmd = await database.collection('commandQueue').findOne({guid: doc.guid, executed: ""})
+
+        // console.log(controlList)
+        // console.log(cmd)
+        
+        //if the device has any controls/command, they need to be sent to the device
+        if(controlList.length > 0 || cmd){
+            let finalCommand = {}
+            if (controlList.length > 0) {
+                finalCommand.control = []
+                controlList.forEach((ctrl) => {
+                    finalCommand.control.push(ctrl.control)
+                })
+            }
+            if (cmd) {
+                if (cmd.command.fwu)
+                    finalCommand.fwu = cmd.command.fwu
+                if (cmd.command.cfg)
+                    finalCommand.cfg = cmd.command.cfg
+            }
+            console.log({t: Math.floor(Date.now() / 1000), cmd: finalCommand})
+            //return the command to the device
+            return response.send({t: Math.floor(Date.now() / 1000), cmd: finalCommand})    
+        } else {
+            console.log({t: Math.floor(Date.now() / 1000)})
+            // if there are no controls/command, just send the timestamp
+            return response.send({t: Math.floor(Date.now() / 1000)})
+        }
+    }
+    catch (e) {
+        console.log('Exception occurred at some point during the request:')
+        console.log(e)
         return response.send({t: Math.floor(Date.now() / 1000)})
     }
 
