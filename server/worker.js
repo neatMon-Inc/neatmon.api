@@ -234,21 +234,21 @@ queue.process(async (job, done) => {
         if(sensorArray.length > 0) {
             await database.collection('sensors').insertMany(sensorArray)
         }
-        // await collection.insertMany(docArray, (error, result) => {
-        //     console.log(result)
-        //     if(result !== undefined){
+        await collection.insertMany(docArray, (error, result) => {
+            console.log(result)
+            if(result !== undefined){
 
-        //         Object.values(result.insertedIds).forEach((id) => {
-        //             console.log("Insert db _id:" + id);
-        //         })
-        //         // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
-        //         let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
+                Object.values(result.insertedIds).forEach((id) => {
+                    console.log("Insert db _id:" + id);
+                })
+                // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
+                let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
                 
-        //         let json = JSON.parse(combinedResponse);
-        //     } else {
-        //         console.log("Empty data object, nothing was inserted.")
-        //     }
-        // });
+                let json = JSON.parse(combinedResponse);
+            } else {
+                console.log("Empty data object, nothing was inserted.")
+            }
+        });
         console.log("Worker Finished")
         done()
     }
