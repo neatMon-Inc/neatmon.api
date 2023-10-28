@@ -38,6 +38,7 @@ queue.process(async (job, done) => {
         console.log('Establishing connection to database...')
         await connectToDatabase();
     }
+    const metadataSet = new Set()
     try {
         console.log("Worker Started Job")
         const timestamps = []
@@ -64,6 +65,13 @@ queue.process(async (job, done) => {
                     Object.keys(entry).forEach((type) => {
                         if(type !== 'ts'){
                             if(typeof entry[type] === 'object'){
+                                metadataSet.add(JSON.stringify({
+                                    guid: job.data.guid,
+                                    sensor: sensor,
+                                    node: type,
+                                    nodeType: 'array',
+                                    aliases: [],
+                                }))
                                 entry[type].forEach((dataPoint, index) => {
                                     docArray.push({
                                         metadata: {
@@ -76,6 +84,13 @@ queue.process(async (job, done) => {
                                     })
                                 })
                             }else{
+                                metadataSet.add(JSON.stringify({
+                                    guid: job.data.guid,
+                                    sensor: sensor,
+                                    node: type,
+                                    nodeType: 'singular',
+                                    aliases: [],
+                                }))
                                 docArray.push({
                                     metadata: {
                                         guid: job.data.guid,
@@ -117,6 +132,8 @@ queue.process(async (job, done) => {
         //     console.log('something went wrong')
         //     console.log(e)
         // }
+
+        
 
         // START DATA FORWARDING CODE
         console.log('Checking to see if data should be forwarded...')
@@ -198,22 +215,40 @@ queue.process(async (job, done) => {
         //     })
         // console.log(docArray)
         // })
-        console.log(docArray)
-        await collection.insertMany(docArray, (error, result) => {
-            console.log(result)
-            if(result !== undefined){
 
-                Object.values(result.insertedIds).forEach((id) => {
-                    console.log("Insert db _id:" + id);
-                })
-                // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
-                let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
-                
-                let json = JSON.parse(combinedResponse);
-            } else {
-                console.log("Empty data object, nothing was inserted.")
+        // console.log(docArray)
+        const sensorArray = []
+        // console.log('metadata set', metadataSet)
+        const currSensors = await database.collection('sensors').find({guid: job.data.guid}).toArray()
+        metadataSet.forEach( (metadata) => {
+            const parsedData = JSON.parse(metadata)
+            const dupeCheck = currSensors.findIndex((s) => {
+                return s.guid === parsedData.guid && s.sensor === parsedData.sensor && s.node === parsedData.node
+            })
+            console.log(dupeCheck)
+            if(dupeCheck === -1) {
+                sensorArray.push(parsedData)
             }
-        });
+        })
+        console.log(sensorArray)
+        if(sensorArray.length > 0) {
+            await database.collection('sensors').insertMany(sensorArray)
+        }
+        // await collection.insertMany(docArray, (error, result) => {
+        //     console.log(result)
+        //     if(result !== undefined){
+
+        //         Object.values(result.insertedIds).forEach((id) => {
+        //             console.log("Insert db _id:" + id);
+        //         })
+        //         // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
+        //         let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
+                
+        //         let json = JSON.parse(combinedResponse);
+        //     } else {
+        //         console.log("Empty data object, nothing was inserted.")
+        //     }
+        // });
         console.log("Worker Finished")
         done()
     }
