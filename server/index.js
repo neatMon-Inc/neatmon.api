@@ -383,10 +383,16 @@ app.post("/api2/device/:p_guid", async (request, response) => {
                 })
             }
             if (cmd) {
-                if (cmd.command.fwu)
+                if (cmd.command.fwu) {
                     finalCommand.fwu = cmd.command.fwu
-                if (cmd.command.cfg)
+                    console.log(cmd.command.fwu.uri.substring(cmd.command.fwu.uri.lastIndexOf('/') + 1));
+                    const filePath = path.join(FILE_DIRECTORY, cmd.command.fwu.uri.substring(cmd.command.fwu.uri.lastIndexOf('/') + 1));
+                    const fileCRC = crc32(fileSystem.readFileSync(filePath, 'utf-8')).toString(16);
+                    finalCommand.fwu.crc = fileCRC
+                }
+                if (cmd.command.cfg) {
                     finalCommand.cfg = cmd.command.cfg
+                } 
             }
             const resp = {t: Math.floor(Date.now() / 1000), cmd: finalCommand}
             const crc = crc32(JSON.stringify(resp)).toString(16)
