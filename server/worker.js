@@ -65,13 +65,6 @@ queue.process(async (job, done) => {
                     Object.keys(entry).forEach((type) => {
                         if(type !== 'ts'){
                             if(typeof entry[type] === 'object'){
-                                metadataSet.add(JSON.stringify({
-                                    guid: job.data.guid,
-                                    sensor: sensor,
-                                    node: type,
-                                    nodeType: 'array',
-                                    aliases: [],
-                                }))
                                 entry[type].forEach((dataPoint, index) => {
                                     docArray.push({
                                         metadata: {
@@ -83,6 +76,13 @@ queue.process(async (job, done) => {
                                         data: dataPoint
                                     })
                                 })
+                                metadataSet.add(JSON.stringify({
+                                    guid: job.data.guid,
+                                    sensor: sensor,
+                                    node: type,
+                                    nodeType: 'array',
+                                    aliases: Array(entry[type].length).fill(""),
+                                }))
                             }else{
                                 metadataSet.add(JSON.stringify({
                                     guid: job.data.guid,
