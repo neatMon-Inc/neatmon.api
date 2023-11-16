@@ -63,7 +63,7 @@ queue.process(async (job, done) => {
                     timestamps.push(new Date(timestamp))
                     Object.keys(entry).forEach((type) => {
                         if(type !== 'ts'){
-                            if(typeof entry[type] === 'object'){
+                            if(typeof entry[type] === 'object' && entry[type] !== null){
                                 entry[type].forEach((dataPoint, index) => {
                                     docArray.push({
                                         metadata: {
