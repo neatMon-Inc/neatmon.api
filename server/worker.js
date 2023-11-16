@@ -76,6 +76,8 @@ queue.process(async (job, done) => {
                                     })
                                 })
                             }else{
+                                if (entry[type] !== null)
+                                    console.log('Entry is null, inserting anyways...')
                                 docArray.push({
                                     metadata: {
                                         guid: job.data.guid,
