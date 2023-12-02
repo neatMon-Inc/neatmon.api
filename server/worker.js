@@ -64,7 +64,7 @@ queue.process(async (job, done) => {
                     timestamps.push(new Date(timestamp))
                     Object.keys(entry).forEach((type) => {
                         if(type !== 'ts'){
-                            if(typeof entry[type] === 'object'){
+                            if(typeof entry[type] === 'object' && entry[type] !== null){
                                 entry[type].forEach((dataPoint, index) => {
                                     docArray.push({
                                         metadata: {
@@ -91,6 +91,8 @@ queue.process(async (job, done) => {
                                     nodeType: 'singular',
                                     aliases: [],
                                 }))
+                                if (entry[type] === null)
+                                    console.log('Entry is null, inserting anyways...')
                                 docArray.push({
                                     metadata: {
                                         guid: job.data.guid,
