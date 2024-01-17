@@ -81,7 +81,7 @@ queue.process(async (job, done) => {
                                     sensor: sensor,
                                     node: type,
                                     nodeType: 'array',
-                                    aliases: Array(entry[type].length).fill(""),
+                                    alias: Array(entry[type].length).fill(""),
                                 }))
                             }else{
                                 metadataSet.add(JSON.stringify({
@@ -89,7 +89,7 @@ queue.process(async (job, done) => {
                                     sensor: sensor,
                                     node: type,
                                     nodeType: 'singular',
-                                    aliases: [],
+                                    alias: [],
                                 }))
                                 if (entry[type] === null)
                                     console.log('Entry is null, inserting anyways...')
