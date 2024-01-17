@@ -76,13 +76,15 @@ queue.process(async (job, done) => {
                                         data: dataPoint
                                     })
                                 })
-                                metadataSet.add(JSON.stringify({
-                                    guid: job.data.guid,
-                                    sensor: sensor,
-                                    node: type,
-                                    nodeType: 'array',
-                                    alias: Array(entry[type].length).fill(""),
-                                }))
+                                if (entry[type].length > 0) {
+                                    metadataSet.add(JSON.stringify({
+                                        guid: job.data.guid,
+                                        sensor: sensor,
+                                        node: type,
+                                        nodeType: 'array',
+                                        alias: Array(entry[type].length).fill(""),
+                                    }))
+                                }
                             }else{
                                 metadataSet.add(JSON.stringify({
                                     guid: job.data.guid,
