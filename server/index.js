@@ -51,9 +51,9 @@ app.use((err, req, res, next) => {
         let now = new Date(); // Get the date/time
         let m_date = new Date(now.toISOString()); // Convert to ISO format
         console.log("\n" + m_date + " - BAD post req from " + req.ip + " || Url: " + req.url);
-        console.log('Error occurred parsing data. This usually means bad JSON was sent. Sending timestamp as a response.')
-        console.log({t: Math.floor(Date.now() / 1000)})
-        res.send({t: Math.floor(Date.now() / 1000)})
+        console.error(err)
+        console.log('Error occurred parsing data. This usually means bad JSON was sent. Sending error as a response.')
+        res.status(400).send({err: 'Bad JSON'})
     } else {
         next()
     }
