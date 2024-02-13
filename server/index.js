@@ -43,9 +43,39 @@ console.log("pword: " + MONGO_DATABASE_EDITOR_PASSWORD);
 console.log("DB string " + CONNECTION_URL);
 
 let app = Express();
-app.use(BodyParser.urlencoded({ extended: true }));
-app.use(BodyParser.json());
-app.use(BodyParser.raw());
+app.use(BodyParser.text({type: 'application/json'}))
+app.use((req, res, next) => {
+    if (req.body) {
+        if (req.body.includes('"pn":')) {
+            console.log('Warning: "pn" key detected from request body. These are currently causing issues, so removing...')
+            var startIndex = req.body.indexOf('"pn":')
+            var endIndex = startIndex + 1
+            var numQuotationMarks = 0;
+            for (endIndex; endIndex < req.body.length; endIndex++) {
+                if (req.body.charAt(endIndex) === '"') {
+                    numQuotationMarks++;
+                }
+                if (numQuotationMarks === 3) {
+                    break;
+                }
+            }
+            for (endIndex; endIndex < req.body.length; endIndex++) {
+                if (req.body.charAt(endIndex) === ',') {
+                    break;
+                }
+            }
+            const newString = req.body.substring(0, startIndex) + req.body.substring(endIndex + 1, req.body.length)
+            req.body = JSON.parse(newString)
+            console.log('Successfully removed the "pn" key. Now processing request.')
+        }
+        else {
+            req.body = JSON.parse(req.body)
+        }
+    }
+    next()
+})
+// app.use(BodyParser.urlencoded({ extended: true }));
+// app.use(BodyParser.json());
 app.use((err, req, res, next) => {
     if (err) {
         let now = new Date(); // Get the date/time
