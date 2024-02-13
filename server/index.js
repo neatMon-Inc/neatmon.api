@@ -135,6 +135,7 @@ app.post("/api/device/:p_guid", async (request, response) => {
 
         // Record the incoming request to the requests cache
         await database.collection('deviceApiRequestsCache').insertOne({
+            route: 'v1',
             dateOfRequest: now,
             connectionIP: request.ip,
             guid: request.params.p_guid,
@@ -354,6 +355,7 @@ app.post("/api2/device/:p_guid", async (request, response) => {
 
         // Record the incoming request to the requests cache
         await database.collection('deviceApiRequestsCache').insertOne({
+            route: 'v2',
             dateOfRequest: now,
             connectionIP: request.ip,
             guid: request.params.p_guid,
