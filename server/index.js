@@ -133,6 +133,14 @@ app.post("/api/device/:p_guid", async (request, response) => {
 
         console.log("\n" + m_date + " - Post req from " + request.ip + " || GUID:" + request.params.p_guid + "; ID:" + request.body.id);
 
+        // Record the incoming request to the requests cache
+        await database.collection('deviceApiRequestsCache').insertOne({
+            dateOfRequest: now,
+            connectionIP: request.ip,
+            guid: request.params.p_guid,
+            postBody: request.body,
+        })
+
         if (!request.body?.id) return response.status(500).send("Bad unit/password"); // No ID included in post!
 
         // First check that the GUID is matching
@@ -343,6 +351,14 @@ app.post("/api2/device/:p_guid", async (request, response) => {
         let m_date = new Date(now.toISOString()); // Convert to ISO format
 
         console.log("\n" + m_date + " - Post req from " + request.ip + " || GUID:" + request.params.p_guid + "; ID:" + request.body.id);
+
+        // Record the incoming request to the requests cache
+        await database.collection('deviceApiRequestsCache').insertOne({
+            dateOfRequest: now,
+            connectionIP: request.ip,
+            guid: request.params.p_guid,
+            postBody: request.body,
+        })
 
         if (!request.body?.id) return response.status(500).send("Bad unit/password"); // No ID included in post!
 
