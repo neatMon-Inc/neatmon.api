@@ -48,7 +48,7 @@ app.use((req, res, next) => {
     if (req.body) {
         if (typeof req.body == 'string') {
             if (req.body.includes('"pn":')) {
-                console.log('Warning: "pn" key detected from request body. These are currently causing issues, so removing...')
+                console.log('Warning: "pn" key detected from request body. These are currently causing issues, so removing key and value...')
                 var startIndex = req.body.indexOf('"pn":')
                 var endIndex = startIndex + 1
                 var numQuotationMarks = 0;
@@ -65,18 +65,15 @@ app.use((req, res, next) => {
                         break;
                     }
                 }
+                const badString = req.body.substring(startIndex, endIndex)
+                console.log('Removing the follow key/value pair from the request: `' + badString + '`')
                 const newString = req.body.substring(0, startIndex) + req.body.substring(endIndex + 1, req.body.length)
                 req.body = JSON.parse(newString)
-                console.log('Successfully removed the "pn" key. Now processing request.')
+                console.log('Successfully removed the "pn" key and value. Now processing request.')
             }
             else {
                 req.body = JSON.parse(req.body)
             }
-        } 
-        else {
-            console.log('Not a string...')
-            console.log(typeof req.body)
-            console.log(req.body)
         }
     }
     next()
