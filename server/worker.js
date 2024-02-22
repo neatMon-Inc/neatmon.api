@@ -48,6 +48,7 @@ queue.process(async (job, done) => {
         let hw = job.data.hw
         let pn = job.data.pn
         
+        console.log(job.data)
         Object.keys(job.data.v).forEach((sensor) => {
             if(sensor === 'sys'){
                 job.data.v[sensor].forEach((entry) => {
