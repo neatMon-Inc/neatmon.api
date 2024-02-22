@@ -43,21 +43,56 @@ queue.process(async (job, done) => {
         console.log("Worker Started Job")
         const timestamps = []
         let docArray = [];
-        console.log(job.data)
-        Object.keys(job.data.v).forEach(async (sensor) => {
+        let locationUpdate = ''
+        let fw = job.data.fw
+        let hw = job.data.hw
+        let pn = job.data.pn
+        
+        Object.keys(job.data.v).forEach((sensor) => {
             if(sensor === 'sys'){
-                if(job.data.v[sensor][0].loc !== undefined){
-                    if(job.data.v[sensor][0].loc[0] !== undefined && job.data.v[sensor][0].loc[1]){
-                        const results = await database.collection('devices').updateOne({'serial': job.data.guid}, {
-                            $set: {
-                                lat: job.data.v[sensor][0].loc[0],
-                                long: job.data.v[sensor][0].loc[1]
-                            }
+                job.data.v[sensor].forEach((entry) => {
+                    const timestamp = entry.ts
+                    timestamps.push(new Date(timestamp))
+                    if (entry.rs != null && timestamp != null) {
+                        docArray.push({
+                            metadata: {
+                                guid: job.data.guid,
+                                sensor: sensor,
+                                type: 'rssi',
+                            },
+                            timestamp: new Date(timestamp * 1000),
+                            data: entry.rs,
                         })
-                        console.log(results)
-                        console.log(`Updated device location to ${job.data.v[sensor][0].loc[0]}, ${job.data.v[sensor][0].loc[1]}`)
+                        metadataSet.add(JSON.stringify({
+                            guid: job.data.guid,
+                            sensor: sensor,
+                            node: 'rssi',
+                            nodeType: 'singular',
+                            alias: [''],
+                        }))
                     }
-                }
+                    if (entry.loc) {
+                        if (entry.loc[0] != null && entry.loc[1] != null && entry.loc[2] != null) {
+                            locationUpdate = JSON.stringify({
+                                lat: entry.loc[0],
+                                long: entry.loc[1],
+                                altitude: entry.loc[2],
+                            })
+                        }
+                    }
+                })
+                // if(job.data.v[sensor][0].loc !== undefined){
+                //     if(job.data.v[sensor][0].loc[0] !== undefined && job.data.v[sensor][0].loc[1]){
+                //         const results = await database.collection('devices').updateOne({'serial': job.data.guid}, {
+                //             $set: {
+                //                 lat: job.data.v[sensor][0].loc[0],
+                //                 long: job.data.v[sensor][0].loc[1]
+                //             }
+                //         })
+                //         console.log(results)
+                //         console.log(`Updated device location to ${job.data.v[sensor][0].loc[0]}, ${job.data.v[sensor][0].loc[1]}`)
+                //     }
+                // }
             }else{
                 job.data.v[sensor].forEach((entry) => {
                     const timestamp = entry.ts
@@ -91,7 +126,7 @@ queue.process(async (job, done) => {
                                     sensor: sensor,
                                     node: type,
                                     nodeType: 'singular',
-                                    alias: [],
+                                    alias: [''],
                                 }))
                                 if (entry[type] === null)
                                     console.log('Entry is null, inserting anyways...')
@@ -229,14 +264,37 @@ queue.process(async (job, done) => {
             const dupeCheck = currSensors.findIndex((s) => {
                 return s.guid === parsedData.guid && s.sensor === parsedData.sensor && s.node === parsedData.node
             })
-            console.log(dupeCheck)
+            //console.log(dupeCheck)
             if(dupeCheck === -1) {
                 sensorArray.push(parsedData)
             }
         })
-        console.log(sensorArray)
         if(sensorArray.length > 0) {
+            console.log('New sensor(s) to add', sensorArray)
             await database.collection('sensors').insertMany(sensorArray)
+        }
+        if (locationUpdate != '') {
+            const location = JSON.parse(locationUpdate)
+            const results = await database.collection('devices').updateOne({'serial': job.data.guid}, {
+                $set: location
+            })
+            console.log(results)
+            console.log(`Updated device location to ${location.lat}, ${location.long}, ${location.altitude}`)
+        }
+        if (fw || hw || pn) {
+            let systemData = {}
+            if (fw) 
+                systemData.fw = fw
+            if (hw)
+                systemData.hw = hw
+            if (pn)
+                systemData.pn = pn
+
+            const results = await database.collection('devices').updateOne({'serial': job.data.guid}, {
+                $set: systemData
+            })
+            console.log(results)
+            console.log('Updates device system information', systemData)
         }
         await collection.insertMany(docArray, (error, result) => {
             console.log(result)

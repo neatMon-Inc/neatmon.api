@@ -47,9 +47,9 @@ app.use(BodyParser.text({type: 'application/json'}))
 app.use((req, res, next) => {
     if (req.body) {
         if (typeof req.body == 'string') {
-            if (req.body.includes('"pn":')) {
-                console.log('Warning: "pn" key detected from request body. These are currently causing issues, so removing key and value...')
-                var startIndex = req.body.indexOf('"pn":')
+            if (req.body.includes('"pn":"')) {
+                console.log('Warning: bad "pn" key detected from request body. These are currently causing issues, so removing key and value...')
+                var startIndex = req.body.indexOf('"pn":"')
                 var endIndex = startIndex + 1
                 var numQuotationMarks = 0;
                 for (endIndex; endIndex < req.body.length; endIndex++) {
@@ -176,15 +176,18 @@ app.post("/api/device/:p_guid", async (request, response) => {
         console.log("GUID/ID: " + request.params.p_guid);
         console.log("HW: " + request.body.hw); // not included in every post
         console.log("FW: " + request.body.fw); // not included in every post
+        console.log("PN: " + request.body.pn) // not included in every post
 
         // If these are not included in the body, they will not be used in the db insert
         m_hw_id = request.body.hw;
         m_fw_id = request.body.fw;
+        m_pn_id = request.body.pn;
 
         const doc = {
             "guid": request.params.p_guid,
             "hw": m_hw_id,
             "fw": m_fw_id,
+            "pn": m_pn_id,
             "d": m_date,
             "v": request.body.v,
             "body": request.body
