@@ -295,7 +295,7 @@ queue.process(async (job, done) => {
                 $set: systemData
             })
             console.log(results)
-            console.log('Updates device system information', systemData)
+            console.log('Updates to device system information', systemData)
         }
         await collection.insertMany(docArray, (error, result) => {
             console.log(result)
