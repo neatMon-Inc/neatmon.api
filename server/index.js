@@ -47,9 +47,9 @@ app.use(BodyParser.text({type: 'application/json'}))
 app.use((req, res, next) => {
     if (req.body) {
         if (typeof req.body == 'string') {
-            if (req.body.includes('"pn":"')) {
+            if (req.body.includes('"pn":"\\x')) {
                 console.log('Warning: bad "pn" key detected from request body. These are currently causing issues, so removing key and value...')
-                var startIndex = req.body.indexOf('"pn":"')
+                var startIndex = req.body.indexOf('"pn":"\\x')
                 var endIndex = startIndex + 1
                 var numQuotationMarks = 0;
                 for (endIndex; endIndex < req.body.length; endIndex++) {
