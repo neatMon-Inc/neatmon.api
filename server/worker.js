@@ -310,7 +310,7 @@ queue.process(async (job, done) => {
         // const filtered_data_with_includes = data_with_includes.filter(v => v.include)
         // const filtered_docs = filtered_data_with_includes.map(data => data.value)
 
-        await collection.insertMany(filtered_docs, (error, result) => {
+        await collection.insertMany(docArray, (error, result) => {
             console.log(result)
             if(result !== undefined){
 
