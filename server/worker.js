@@ -312,21 +312,23 @@ queue.process(async (job, done) => {
 
         console.log('filtered_docs', filtered_docs)
 
-        await collection.insertMany(docArray, (error, result) => {
-            console.log(result)
-            if(result !== undefined){
+        if (filtered_docs.length > 0) {
+            await collection.insertMany(filtered_docs, (error, result) => {
+                console.log(result)
+                if(result !== undefined){
 
-                Object.values(result.insertedIds).forEach((id) => {
-                    console.log("Insert db _id:" + id);
-                })
-                // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
-                let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
-                
-                let json = JSON.parse(combinedResponse);
-            } else {
-                console.log("Empty data object, nothing was inserted.")
-            }
-        });
+                    Object.values(result.insertedIds).forEach((id) => {
+                        console.log("Insert db _id:" + id);
+                    })
+                    // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
+                    let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
+                    
+                    let json = JSON.parse(combinedResponse);
+                } else {
+                    console.log("Empty data object, nothing was inserted.")
+                }
+            });
+        }
         console.log("Worker Finished")
         done()
     }
