@@ -298,17 +298,17 @@ queue.process(async (job, done) => {
             console.log('Updates to device system information', systemData)
         }
 
-        //This block of code filters out duplicate data
-        const promises = docArray.map(async(doc) => {
-            const check = await collection.findOne(doc)
-            return {
-                value: doc,
-                include: check == null
-            }
-        })
-        const data_with_includes = await Promise.all(promises)
-        const filtered_data_with_includes = data_with_includes.filter(v => v.include)
-        const filtered_docs = filtered_data_with_includes.map(data => data.value)
+        // //This block of code filters out duplicate data
+        // const promises = docArray.map(async(doc) => {
+        //     const check = await collection.findOne(doc)
+        //     return {
+        //         value: doc,
+        //         include: check == null
+        //     }
+        // })
+        // const data_with_includes = await Promise.all(promises)
+        // const filtered_data_with_includes = data_with_includes.filter(v => v.include)
+        // const filtered_docs = filtered_data_with_includes.map(data => data.value)
 
         await collection.insertMany(filtered_docs, (error, result) => {
             console.log(result)
