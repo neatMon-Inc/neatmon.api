@@ -300,7 +300,12 @@ queue.process(async (job, done) => {
 
         // //This block of code filters out duplicate data
         const promises = docArray.map(async(doc) => {
-            const check = await collection.findOne(doc)
+            const check = await collection.findOne({
+                'metadata.guid': doc.metadata.guid,
+                'metadata.sensor': doc.metadata.sensor,
+                'metadata.type': doc.metadata.type,
+                'timestamp': doc.timestamp,
+            })
             return {
                 value: doc,
                 include: check == null
