@@ -2,6 +2,7 @@ require('dotenv').config({});
 const bull = require('bull');
 const { json } = require('express');
 const axios = require('axios');
+const ObjectId = require('bson').ObjectId
 let database, collection;
 console.log('Starting up worker queue...')
 const queue = new bull('data-queue', 'redis://redis:6379');
@@ -55,8 +56,10 @@ queue.process(async (job, done) => {
                     const timestamp = entry.ts
                     timestamps.push(new Date(timestamp))
                     if (entry.rs != null && timestamp != null) {
+                        const id = new ObjectId()
                         docArray.push({
                             metadata: {
+                                id: id,
                                 guid: job.data.guid,
                                 sensor: sensor,
                                 type: 'rssi',
@@ -102,8 +105,10 @@ queue.process(async (job, done) => {
                         if(type !== 'ts'){
                             if(typeof entry[type] === 'object' && entry[type] !== null){
                                 entry[type].forEach((dataPoint, index) => {
+                                    const id = new ObjectId()
                                     docArray.push({
                                         metadata: {
+                                            id: id,
                                             guid: job.data.guid,
                                             sensor: sensor,
                                             type: type + ':' + index,
@@ -131,8 +136,10 @@ queue.process(async (job, done) => {
                                 }))
                                 if (entry[type] === null)
                                     console.log('Entry is null, inserting anyways...')
+                                const id = new ObjectId()
                                 docArray.push({
                                     metadata: {
+                                        id: id,
                                         guid: job.data.guid,
                                         sensor: sensor,
                                         type: type,
@@ -257,6 +264,7 @@ queue.process(async (job, done) => {
         // })
 
         // console.log(docArray)
+
         const sensorArray = []
         // console.log('metadata set', metadataSet)
         const currSensors = await database.collection('sensors').find({guid: job.data.guid}).toArray()
