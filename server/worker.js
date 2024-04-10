@@ -54,16 +54,16 @@ queue.process(async (job, done) => {
         if (now != null && length != null) {
             const date = new Date(now)
             const id = new ObjectId()
-            docArray.push({
-                metadata: {
-                    id: id,
-                    guid: job.data.guid,
-                    sensor: 'sys',
-                    type: 'bytes',
-                },
-                timestamp: date,
-                data: parseInt(length),
-            })
+            // docArray.push({
+            //     metadata: {
+            //         id: id,
+            //         guid: job.data.guid,
+            //         sensor: 'sys',
+            //         type: 'bytes',
+            //     },
+            //     timestamp: date,
+            //     data: parseInt(length),
+            // })
             // metadataSet.add(JSON.stringify({
             //     guid: job.data.guid,
             //     sensor: 'sys',
