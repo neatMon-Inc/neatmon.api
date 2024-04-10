@@ -62,7 +62,7 @@ queue.process(async (job, done) => {
                     type: 'bytes',
                 },
                 timestamp: date,
-                data: length,
+                data: parseInt(length),
             })
             metadataSet.add(JSON.stringify({
                 guid: job.data.guid,
