@@ -139,6 +139,7 @@ app.post("/api/device/:p_guid", async (request, response) => {
             dateOfRequest: now,
             connectionIP: request.ip,
             guid: request.params.p_guid,
+            postHeaders: request.headers,
             postBody: request.body,
         })
 
@@ -362,6 +363,7 @@ app.post("/api2/device/:p_guid", async (request, response) => {
             dateOfRequest: now,
             connectionIP: request.ip,
             guid: request.params.p_guid,
+            postHeaders: request.headers,
             postBody: request.body,
         })
 
