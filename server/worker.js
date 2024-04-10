@@ -64,13 +64,13 @@ queue.process(async (job, done) => {
                 timestamp: date,
                 data: parseInt(length),
             })
-            metadataSet.add(JSON.stringify({
-                guid: job.data.guid,
-                sensor: 'sys',
-                node: 'bytes',
-                nodeType: 'singular',
-                alias: [''],
-            }))
+            // metadataSet.add(JSON.stringify({
+            //     guid: job.data.guid,
+            //     sensor: 'sys',
+            //     node: 'bytes',
+            //     nodeType: 'singular',
+            //     alias: [''],
+            // }))
         }
         
         console.log(job.data)
