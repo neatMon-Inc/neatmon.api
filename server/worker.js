@@ -48,6 +48,23 @@ queue.process(async (job, done) => {
         let fw = job.data.fw
         let hw = job.data.hw
         let pn = job.data.pn
+        let length = job.data.length
+        let now = job.data.now
+
+        if (now != null && length != null) {
+            const date = new Date(now)
+            const id = new ObjectId()
+            docArray.push({
+                metadata: {
+                    id: id,
+                    guid: job.data.guid,
+                    sensor: 'sys',
+                    type: 'bytes',
+                },
+                timestamp: date,
+                data: length,
+            })
+        }
         
         console.log(job.data)
         Object.keys(job.data.v).forEach((sensor) => {
