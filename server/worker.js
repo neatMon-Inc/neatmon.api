@@ -216,7 +216,10 @@ queue.process(async (job, done) => {
                     console.log('Data needs to be forwarded.')
                     if (organization.webAddress !== '' && organization.webAddress !== null && organization.webAddress !== undefined && organization.webAddress !== 'undefined') {
 
-                        let newAddress = organization.webAddress + '?id=' + job.data.guid
+                        let newAddress = organization.webAddress
+                        if (typeof newAddress == 'string' && newAddress.includes('%GUID%')) {
+                            newAddress = newAddress.replace('%GUID%', job.data.guid)
+                        }
                         console.log('Organization\'s forwarding address: ' + newAddress)
 
                         try{
