@@ -33,7 +33,7 @@ services:
         ports:
             - "1330:5000"
         restart: always
-        command: "nodemon /usr/src/app/index.js"
+        command: "node /usr/src/app/index.js"
         depends_on:
             - "mongoDB"
             - "redis"
@@ -45,7 +45,8 @@ services:
             - "./server:/usr/src/app"
         depends_on:
             - redis
-        command: nodemon /usr/src/app/worker.js
+        restart: always
+        command: node /usr/src/app/worker.js
     redis:
         image: redis:alpine
         expose:
