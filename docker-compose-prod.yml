@@ -40,7 +40,7 @@ services:
         deploy:
             resources:
                 limits:
-                memory: 100M
+                    memory: 100M
     worker:
         build: ./server
         env_file:
@@ -54,7 +54,7 @@ services:
         deploy:
             resources:
                 limits:
-                memory: 100M
+                    memory: 100M
     redis:
         image: redis:alpine
         expose:
@@ -62,4 +62,4 @@ services:
         deploy:
             resources:
                 limits:
-                memory: 100M
+                    memory: 100M
