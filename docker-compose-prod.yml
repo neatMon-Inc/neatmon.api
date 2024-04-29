@@ -33,6 +33,7 @@ services:
         ports:
             - "1330:5000"
         restart: always
+        memory: 75M
         command: "node /usr/src/app/index.js"
         depends_on:
             # - "mongoDB"
@@ -46,8 +47,10 @@ services:
         depends_on:
             - redis
         restart: always
+        memory: 75M
         command: node /usr/src/app/worker.js
     redis:
         image: redis:alpine
         expose:
             - "6379"
+        memory: 100M
