@@ -33,11 +33,14 @@ services:
         ports:
             - "1330:5000"
         restart: always
-        memory: 75M
         command: "node /usr/src/app/index.js"
         depends_on:
             # - "mongoDB"
             - "redis"
+        deploy:
+            resources:
+                limits:
+                memory: 100M
     worker:
         build: ./server
         env_file:
@@ -47,10 +50,16 @@ services:
         depends_on:
             - redis
         restart: always
-        memory: 75M
         command: node /usr/src/app/worker.js
+        deploy:
+            resources:
+                limits:
+                memory: 100M
     redis:
         image: redis:alpine
         expose:
             - "6379"
-        memory: 100M
+        deploy:
+            resources:
+                limits:
+                memory: 100M
