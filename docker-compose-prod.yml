@@ -5,22 +5,22 @@
 
 version: "3.8"
 services:
-    mongoDB:
-        # https://hub.docker.com/_/mongo
-        container_name: mongoDB
-        hostname: mongo-database
-        image: mongo
-        volumes:
-            - ./database/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
-            - ./database:/tmp/data
-        ports:
-            - "27017:27017"
-        environment:
-            - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
-            - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
-            - MONGO_INITDB_DATABASE=${MONGO_DATABASE_NAME}
-        command: mongod
-        restart: always
+    # mongoDB:
+    #     # https://hub.docker.com/_/mongo
+    #     container_name: mongoDB
+    #     hostname: mongo-database
+    #     image: mongo
+    #     volumes:
+    #         - ./database/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    #         - ./database:/tmp/data
+    #     ports:
+    #         - "27017:27017"
+    #     environment:
+    #         - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+    #         - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+    #         - MONGO_INITDB_DATABASE=${MONGO_DATABASE_NAME}
+    #     command: mongod
+    #     restart: always
     neatmon-api:
         env_file:
             - ./config/.env
@@ -35,7 +35,7 @@ services:
         restart: always
         command: "node /usr/src/app/index.js"
         depends_on:
-            - "mongoDB"
+            # - "mongoDB"
             - "redis"
     worker:
         build: ./server
