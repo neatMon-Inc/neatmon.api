@@ -59,6 +59,7 @@ services:
         image: redis:alpine
         expose:
             - "6379"
+        restart: always
         deploy:
             resources:
                 limits:
