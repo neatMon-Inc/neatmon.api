@@ -68,11 +68,34 @@ app.use((req, res, next) => {
                 const badString = req.body.substring(startIndex, endIndex)
                 console.log('Removing the follow key/value pair from the request: `' + badString + '`')
                 const newString = req.body.substring(0, startIndex) + req.body.substring(endIndex + 1, req.body.length)
-                req.body = JSON.parse(newString)
                 console.log('Successfully removed the "pn" key and value. Now processing request.')
+                //adding a try catch. Some devices are sending bad JSON. Returning a 200 for now.
+                try {
+                    req.body = JSON.parse(newString)
+                }
+                catch (e) {
+                    let now = new Date(); // Get the date/time
+                    let m_date = new Date(now.toISOString()); // Convert to ISO format
+                    console.log("\n" + m_date + " - BAD post req from " + req.ip + " || Url: " + req.url);
+                    console.error(e)
+                    console.log('Error occurred parsing JSON. Bad JSON was sent. Sending 200 for now...')
+                    response.status(200).send({t: Math.floor(Date.now() / 1000)})
+                }
             }
             else {
-                req.body = JSON.parse(req.body)
+                //adding a try catch. Some devices are sending bad JSON. Returning a 200 for now.
+                try {
+                    req.body = JSON.parse(req.body)
+                }
+                catch (e) {
+                    let now = new Date(); // Get the date/time
+                    let m_date = new Date(now.toISOString()); // Convert to ISO format
+                    console.log("\n" + m_date + " - BAD post req from " + req.ip + " || Url: " + req.url);
+                    console.error(e)
+                    console.log('Error occurred parsing JSON. Bad JSON was sent. Sending 200 for now...')
+                    response.status(200).send({t: Math.floor(Date.now() / 1000)})
+                }
+                
             }
         }
     }
