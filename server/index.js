@@ -79,7 +79,7 @@ app.use((req, res, next) => {
                     console.log("\n" + m_date + " - BAD post req from " + req.ip + " || Url: " + req.url);
                     console.error(e)
                     console.log('Error occurred parsing JSON. Bad JSON was sent. Sending 200 for now...')
-                    res.status(200).send({t: Math.floor(Date.now() / 1000)})
+                    return res.status(200).send({t: Math.floor(Date.now() / 1000)})
                 }
             }
             else {
@@ -93,7 +93,7 @@ app.use((req, res, next) => {
                     console.log("\n" + m_date + " - BAD post req from " + req.ip + " || Url: " + req.url);
                     console.error(e)
                     console.log('Error occurred parsing JSON. Bad JSON was sent. Sending 200 for now...')
-                    res.status(200).send({t: Math.floor(Date.now() / 1000)})
+                    return res.status(200).send({t: Math.floor(Date.now() / 1000)})
                 }
             }
         }
@@ -109,7 +109,7 @@ app.use((err, req, res, next) => {
         console.log("\n" + m_date + " - BAD post req from " + req.ip + " || Url: " + req.url);
         console.error(err)
         console.log('Error occurred parsing data. This usually means bad JSON was sent. Sending error as a response.')
-        res.status(400).send({err: 'Bad JSON'})
+        return res.status(400).send({err: 'Bad JSON'})
     } else {
         next()
     }
