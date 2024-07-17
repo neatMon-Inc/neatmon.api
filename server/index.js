@@ -540,15 +540,34 @@ app.get("/api/status/time", async (request, response) => {
 ** Returns all data for a given GUID starting with the latest
 */
 app.get("/api/device/status/:m_guid", async (request, response) => {
-    console.log("Received a data request for GUID status: " + request.params.m_guid);
+    const m_guid = request.params.m_guid;
+    const start = request.query.start;
+    const end = request.query.end;
+    console.log("Received a data request for GUID status: " + m_guid);
 
-    let query = { 'guid': request.params.m_guid }; // look for all documents/data with this guid
+    const startDate = start ? new Date(parseInt(start)) : null;
+    const endDate = end ? new Date(parseInt(end)) : null;
+    
+    let query = { 'guid': m_guid };
+    if (startDate || endDate) {
+        query.createdAt = {};
+        if (startDate) {
+            query.createdAt.$gte = startDate;
+        }
+        if (endDate) {
+             query.createdAt.$lte = endDate;
+        }
+    }
+
     let sort = { 'd': -1 }; // show data ascending according to the recorded date (d)
     try{
         await collection.find(query).sort(sort).toArray(function (error, result) {
             if (error) {
                 return response.status(500).send("ID doesn't exist, or bad request");
                 // return response.status(500).send(error);
+            }
+            if (result > 1000) {
+                return response.status(400).json({ "Error": "Exceed limits. Reduce requested range." });
             }
             response.send(result);
         });
