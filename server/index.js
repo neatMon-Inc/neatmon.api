@@ -552,10 +552,10 @@ app.get("/api/device/status/:m_guid", async (request, response) => {
     if (startDate || endDate) {
         query.createdAt = {};
         if (startDate) {
-            query.lastUpdated.$gte = startDate;
+            query.timestamp.$gte = startDate;
         }
         if (endDate) {
-             query.lastUpdated.$lte = endDate;
+             query.timestamp.$lte = endDate;
         }
     }
 
