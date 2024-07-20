@@ -550,7 +550,7 @@ app.get("/api/device/data/:m_guid", async (request, response) => {
 
     let sort = { 'timestamp': -1 };
     try{
-        console.dir(query);
+        // console.dir(query); // See query sent by uncommenting this line, helpful for debugging
         await collection.find(query).sort(sort).toArray(function (error, result) {
             if (error) {
                 return response.status(500).send("API Error: Bad request");
