@@ -548,7 +548,7 @@ app.get("/api/device/data/:m_guid", async (request, response) => {
         }
     }
 
-    let sort = { 'd': -1 }; // show data ascending according to the recorded date (d)
+    let sort = { 'timestamp': -1 };
     try{
         console.dir(query);
         await collection.find(query).sort(sort).toArray(function (error, result) {
