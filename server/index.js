@@ -409,20 +409,6 @@ app.post("/api2/device/:p_guid", async (request, response) => {
         }
         else if (request.body.id.length > 5 && request.body.id == request.params.p_guid) m_guid = request.body.id; // Long string for GUID provided
         else return response.status(500).send("Bad unit/password"); // Catch all for bad guid or undefined guid in post
-        
-        // if ((m_guid_shortened != request.params.p_guid.substring(31)) || (m_guid != request.params.p_guid)) return response.status(500).send("Bad unit/password");
-
-        // The best practice is to include a password check, if the schema doesn't provide this, just comment this out
-        // console.log("Looking up pword for GUID: " + m_guid);
-        // m_pword = request.body.pword;
-        // let pwordCheckResult = await checkPword(m_pword, m_guid);
-        // if (pwordCheckResult) 
-        //     console.log("OK pword");
-        // else {
-        //     console.log("Error with pword");
-        //     return response.status(500).send(error);
-        // }
-        // End password checking
 
         const length = request.get('Content-Length')
 
@@ -539,44 +525,46 @@ app.get("/api/status/time", async (request, response) => {
 ** Get the status of a GUID passed as parameter
 ** Returns all data for a given GUID starting with the latest
 */
-app.get("/api/device/status/:m_guid", async (request, response) => {
-    console.log("Received a data request for GUID status: " + request.params.m_guid);
+app.get("/api/device/data/:m_guid", async (request, response) => {
+    const m_guid = request.params.m_guid;
+    const start = request.query.start;
+    const end = request.query.end;
+    console.log("Received a REST data request /api/device/data/" + m_guid + ", Start: " + start + ", End: " + end);
 
-    let query = { 'guid': request.params.m_guid }; // look for all documents/data with this guid
-    let sort = { 'd': -1 }; // show data ascending according to the recorded date (d)
+    const startDate = start ? new Date(parseInt(start  * 1000)).toISOString() : null;
+    const endDate = end ? new Date(parseInt(end * 1000)).toISOString() : null;
+    
+    // {"metadata.guid" : "my-guid-here" , "timestamp" : {$gte : ISODate('2024-07-15T00:00:01.000')}}
+    let query = { 'metadata.guid': m_guid };
+    if (startDate || endDate) {
+        query.timestamp = {};
+        if (startDate) {
+            console.log("Start time: " + startDate);
+            query.timestamp["$gte"] = new Date(startDate);
+        }
+        if (endDate) {
+            console.log("End time: " + endDate);
+            query.timestamp["$lte"] = new Date(endDate);
+        }
+    }
+
+    let sort = { 'timestamp': -1 };
     try{
+        // console.dir(query); // See query sent by uncommenting this line, helpful for debugging
         await collection.find(query).sort(sort).toArray(function (error, result) {
             if (error) {
-                return response.status(500).send("ID doesn't exist, or bad request");
-                // return response.status(500).send(error);
+                return response.status(500).send("API Error: Bad request");
+            }
+            console.log("Query result size: " + JSON.parse(JSON.stringify(result)).length);
+            if (JSON.parse(JSON.stringify(result)).length > 1000) {
+                return response.status(400).json({ "Error": "Query results exceed limits. Reduce requested range." });
             }
             response.send(result);
         });
     }catch(e){
         console.error("Error parsing incoming request: ", e);
-        return response.status(500).send("Error finding record in collection");
+        return response.status(500).send("API Error: Unable to find records in collection");
     }
-});
-
-/*
-**  Get the data from the POST _id passed as parameter
-*/
-app.get("/api/device/data/:postId", async (request, response) => {
-    console.log("Received a data request for _id: " + request.params.postId);
-    try{
-        await collection.findOne({ "_id": new ObjectId(request.params.postId) }, (error, result) => {
-            if (error) {
-                return response.status(500).send("ID doesn't exist, or bad request");
-                // return response.status(500).send(error);
-            }
-            console.log(result);
-            response.send(result);
-        });
-    }catch(e){
-        console.error("Error parsing incoming request: ", e);
-        return response.status(500).send("Error finding record in collection");
-    }
-    
 });
 
 /*
