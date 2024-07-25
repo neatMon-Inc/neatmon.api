@@ -180,7 +180,7 @@ queue.process(async (job, done) => {
 
         // console.log('Forwarding data...') 
         // try {
-        //     let address = 'http://147.182.239.29:5000/api/device'
+        //     let address = 'http://127.0.0.1:1330/api/device'
         //     let newAddress = address + '?id=' + job.data.guid
         //     console.log(newAddress)
         //     console.log(JSON.stringify(job.data.body))
