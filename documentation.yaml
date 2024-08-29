@@ -13,8 +13,151 @@ info:
     name: MIT
     url: https://github.com/neatMon-Inc/neatmon.api/blob/workerQueue/LICENSE
   version: 1.0.11
+
 externalDocs:
   description: Find out more about neatMon, Inc.
   url: http://www.neatmon.com
+
 servers:
-  - url: http://api.neatmon.io
+  - url: https://api.neatmon.com/v1
+    description: Production server
+
+paths:
+  /api/device/{p_guid}:
+    post:
+      summary: Handle device data post
+      description: Receives data from devices and processes it, returning relevant control commands if any exist.
+      parameters:
+        - in: path
+          name: p_guid
+          required: true
+          schema:
+            type: string
+          description: GUID of the device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  example: "device12345"
+                hw:
+                  type: string
+                  example: "HW_Version"
+                fw:
+                  type: string
+                  example: "FW_Version"
+                pn:
+                  type: string
+                  example: "PartNumber"
+                v:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    properties:
+                      ts:
+                        type: integer
+                        example: 1622547802
+                      data:
+                        type: number
+                        example: 23.5
+      responses:
+        '200':
+          description: Data processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  t:
+                    type: integer
+                    example: 1622547802
+                  cmd:
+                    type: object
+                    description: Commands to be sent to the device, if any.
+        '500':
+          description: Bad unit/password or internal server error
+
+  /api2/device/{p_guid}:
+    post:
+      summary: Handle device data post with CRC
+      description: Receives data from devices, processes it, and returns relevant control commands with CRC if any exist.
+      parameters:
+        - in: path
+          name: p_guid
+          required: true
+          schema:
+            type: string
+          description: GUID of the device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  example: "device12345"
+                hw:
+                  type: string
+                  example: "HW_Version"
+                fw:
+                  type: string
+                  example: "FW_Version"
+                pn:
+                  type: string
+                  example: "PartNumber"
+                v:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    properties:
+                      ts:
+                        type: integer
+                        example: 1622547802
+                      data:
+                        type: number
+                        example: 23.5
+      responses:
+        '200':
+          description: Data processed successfully with CRC
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  t:
+                    type: integer
+                    example: 1622547802
+                  cmd:
+                    type: object
+                    description: Commands to be sent to the device, if any.
+        '500':
+          description: Bad unit/password or internal server error
+
+components:
+  schemas:
+    DeviceData:
+      type: object
+      properties:
+        id:
+          type: string
+        hw:
+          type: string
+        fw:
+          type: string
+        pn:
+          type: string
+        v:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              ts:
+                type: integer
+              data:
+                type: number
