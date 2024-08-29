@@ -104,7 +104,7 @@ paths:
                 type: object
                 properties:
                   t:
-                    description: current time in epoch format
+                    description: Current time in epoch format
                     type: integer
                     example: 1622547802
 
@@ -184,6 +184,7 @@ components:
             type: object
             properties:
               ts:
+                description: Current time in epoch format
                 type: integer
               data:
                 type: number
@@ -192,6 +193,7 @@ components:
       type: object
       properties:
         t:
+          description: Current time in epoch format
           type: integer
         cmd:
           type: object
