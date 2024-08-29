@@ -25,7 +25,6 @@ async function connectToDatabase() {
         console.log(DATABASE_COLLECTION);
         collection = database.collection(DATABASE_COLLECTION); // data storage
 
-        // collection = database.collection("device-data");
         unit_configuration = database.collection(DATABASE_CONFIG); // password storage
         console.log("Connected to `" + DATABASE_NAME + ":" + DATABASE_CONFIG + ", " + DATABASE_COLLECTION + "`!");
     }
@@ -109,18 +108,6 @@ queue.process(async (job, done) => {
                         }
                     }
                 })
-                // if(job.data.v[sensor][0].loc !== undefined){
-                //     if(job.data.v[sensor][0].loc[0] !== undefined && job.data.v[sensor][0].loc[1]){
-                //         const results = await database.collection('devices').updateOne({'serial': job.data.guid}, {
-                //             $set: {
-                //                 lat: job.data.v[sensor][0].loc[0],
-                //                 long: job.data.v[sensor][0].loc[1]
-                //             }
-                //         })
-                //         console.log(results)
-                //         console.log(`Updated device location to ${job.data.v[sensor][0].loc[0]}, ${job.data.v[sensor][0].loc[1]}`)
-                //     }
-                // }
             }else{
                 job.data.v[sensor].forEach((entry) => {
                     const timestamp = entry.ts
@@ -176,35 +163,7 @@ queue.process(async (job, done) => {
                     })
                 })
             }
-        })
-
-        // console.log('Forwarding data...') 
-        // try {
-        //     let address = 'http://127.0.0.1:1330/api/device'
-        //     let newAddress = address + '?id=' + job.data.guid
-        //     console.log(newAddress)
-        //     console.log(JSON.stringify(job.data.body))
-        //     res = await axios.post(newAddress, JSON.stringify(job.data.body), {
-        //         headers: {
-        //             "Content-Type": "application/json",
-        //         }
-        //     })
-
-        //     console.log(res)
-
-        //     if (res.status != 200) {
-        //         console.error('Forwarding failed.')
-        //     }
-        //     else {
-        //         console.log('Forwarding successful!')
-        //     }
-        // }
-        // catch (e) {
-        //     console.log('something went wrong')
-        //     console.log(e)
-        // }
-
-        
+        })       
 
         // START DATA FORWARDING CODE
         console.log('Checking to see if data should be forwarded...')
@@ -277,20 +236,6 @@ queue.process(async (job, done) => {
             console.log(job.data)
         }
         // END DATA FORWARDING CODE
-
-
-        // let collisions = collection.find({'timestamp': {'$in': timestamps}, 'metadata.guid': job.data.guid})
-        // let final_doc_array = []
-        // collisions.forEach((document) => {
-        //     final_doc_array = docArray.filter((incoming) => {
-        //         console.log(document)
-        //         const foundCollision = incoming.timestamp.getTime() === document.timestamp.getTime() && document.metadata.sensor === incoming.metadata.sensor && document.metadata.type === incoming.metadata.type
-        //         return !foundCollision
-        //     })
-        // console.log(docArray)
-        // })
-
-        // console.log(docArray)
 
         const sensorArray = []
         // console.log('metadata set', metadataSet)

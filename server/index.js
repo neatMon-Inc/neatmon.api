@@ -6,7 +6,6 @@
 */
 
 require('dotenv').config({}); // Get env variables
-// const axios = require("axios"); // HTTP Client
 const Express = require("express");
 var http = require('http'),
     fileSystem = require('fs'),
@@ -18,12 +17,11 @@ const ObjectId = require("mongodb").ObjectID;
 const bull = require('bull');
 const crc32 = require('crc/crc32');
 const queue = new bull('data-queue', 'redis://redis:6379')
-// const fetch = require('isomorphic-fetch')
 
 INSIDE_NEATMON = process.env.INSIDE_NEATMON
 console.log(INSIDE_NEATMON)
 
-console.log("Setting up app.  Getting environment variables");
+console.log("Setting up app.  Getting environment variables...");
 FROM_NEATMON_IO = process.env.FROM_NEATMON_IO
 CONNECTION_URL = process.env.MONGO_URL;
 const DATABASE_NAME = process.env.MONGO_DATABASE_NAME;
@@ -32,14 +30,7 @@ const DATABASE_CONFIG = process.env.MONGO_DATABASE_COLLECTION_CONFIGURATION;
 const MONGO_DATABASE_EDITOR_USER = process.env.MONGO_DATABASE_EDITOR_USER;
 const MONGO_DATABASE_EDITOR_PASSWORD = process.env.MONGO_DATABASE_EDITOR_PASSWORD;
 console.log("Connecting with User: " + MONGO_DATABASE_EDITOR_USER);
-console.log("pword: " + MONGO_DATABASE_EDITOR_PASSWORD);
-
-// Add the protocol to the connection URL
-// if (FROM_NEATMON_IO !== 'true') {
-//     CONNECTION_URL = "mongodb://" + MONGO_DATABASE_EDITOR_USER + ":" + MONGO_DATABASE_EDITOR_PASSWORD + "@" + CONNECTION_URL + "/" + DATABASE_NAME;
-// }
-
-
+console.log("Pword: " + MONGO_DATABASE_EDITOR_PASSWORD);
 console.log("DB string " + CONNECTION_URL);
 
 let app = Express();
@@ -83,7 +74,7 @@ app.use((req, res, next) => {
                 }
             }
             else {
-                //adding a try catch. Some devices are sending bad JSON. Returning a 200 for now.
+                // Adding a try catch. Some devices are sending bad JSON. Returning a 200 for now.
                 try {
                     req.body = JSON.parse(req.body)
                 }
@@ -100,8 +91,7 @@ app.use((req, res, next) => {
     }
     next()
 })
-// app.use(BodyParser.urlencoded({ extended: true }));
-// app.use(BodyParser.json());
+
 app.use((err, req, res, next) => {
     if (err) {
         let now = new Date(); // Get the date/time
@@ -148,8 +138,8 @@ async function checkPword(p_pword, p_guid) {
 app.post("/api/device/:p_guid", async (request, response) => {
     try {
         // If it is desired to maintain a separate record of when the data is received as opposed to 
-        // recorded then consider the code below for a starting point.  Add the m_date to the doc object
-        // too.
+        //   recorded then consider the code below for a starting point.  Add the m_date to the doc object
+        //   too.
         let now = new Date(); // Get the date/time
         let m_date = new Date(now.toISOString()); // Convert to ISO format
 
@@ -168,8 +158,8 @@ app.post("/api/device/:p_guid", async (request, response) => {
         if (!request.body?.id) return response.status(500).send("Bad unit/password"); // No ID included in post!
 
         // First check that the GUID is matching
-        // The incoming post can either be the full GUID string, or the shortened string
-        // To reduce payload size the GUID will be shortened to the last 5 digits in the body of the post
+        //   The incoming post can either be the full GUID string, or the shortened string
+        //   To reduce payload size the GUID will be shortened to the last 5 digits in the body of the post
 
         let m_guid = request.body.id;
 
@@ -183,7 +173,6 @@ app.post("/api/device/:p_guid", async (request, response) => {
 
         const length = request.get('Content-Length')
 
-        // console.log("Post content: ");
         console.log("GUID/ID: " + request.params.p_guid);
         console.log("HW: " + request.body.hw); // not included in every post
         console.log("FW: " + request.body.fw); // not included in every post
@@ -214,15 +203,12 @@ app.post("/api/device/:p_guid", async (request, response) => {
             console.log(`device with GUID ${doc.guid} does not exist, data will not be inserted`)
         }
 
-        //grab any controls that are available for device that have not been executed yet
+        // Grab any controls that are available for device that have not been executed yet
         const controlList = await database.collection('controlQueue').find({guid: doc.guid, executed: ""}).toArray()
-        //grab a command that needs to be executed on the device
+        // Grab a command that needs to be executed on the device
         const cmd = await database.collection('commandQueue').findOne({guid: doc.guid, executed: ""})
-
-        // console.log(controlList)
-        // console.log(cmd)
         
-        //if the device has any controls/command, they need to be sent to the device
+        // If the device has any controls/command, they need to be sent to the device
         if(controlList.length > 0 || cmd){
             let finalCommand = {}
             if (controlList.length > 0) {
@@ -238,11 +224,10 @@ app.post("/api/device/:p_guid", async (request, response) => {
                     finalCommand.cfg = cmd.command.cfg
             }
             console.log({t: Math.floor(Date.now() / 1000), cmd: finalCommand})
-            //return the command to the device
             return response.send({t: Math.floor(Date.now() / 1000), cmd: finalCommand})    
         } else {
             console.log({t: Math.floor(Date.now() / 1000)})
-            // if there are no controls/command, just send the timestamp
+            // If there are no controls/command, just send the timestamp
             return response.send({t: Math.floor(Date.now() / 1000)})
         }
     }
@@ -255,12 +240,12 @@ app.post("/api/device/:p_guid", async (request, response) => {
 
 
 //VERSION 2 OF THE POST ROUTE
-//This includes a CRC in the response
+//  This includes a CRC in the response
 app.post("/api2/device/:p_guid", async (request, response) => {
     try {
         // If it is desired to maintain a separate record of when the data is received as opposed to 
-        // recorded then consider the code below for a starting point.  Add the m_date to the doc object
-        // too.
+        //   recorded then consider the code below for a starting point.  Add the m_date to the doc object
+        //   too.
         let now = new Date(); // Get the date/time
         let m_date = new Date(now.toISOString()); // Convert to ISO format
 
@@ -279,8 +264,8 @@ app.post("/api2/device/:p_guid", async (request, response) => {
         if (!request.body?.id) return response.status(500).send("Bad unit/password"); // No ID included in post!
 
         // First check that the GUID is matching
-        // The incoming post can either be the full GUID string, or the shortened string
-        // To reduce payload size the GUID will be shortened to the last 5 digits in the body of the post
+        //   The incoming post can either be the full GUID string, or the shortened string
+        //   To reduce payload size the GUID will be shortened to the last 5 digits in the body of the post
 
         let m_guid = request.body.id;
 
@@ -455,8 +440,6 @@ app.get("/api/device/data/:m_guid", async (request, response) => {
 app.get("/files/:filename", async (request, response) => {
     
     console.log("Received a request for file: " + request.params.filename);
-    console.log("Request body: " + request.headers);
-    console.log("Request body: " + request.body);
     try {
         var filePath = path.join(FILE_DIRECTORY, request.params.filename);
         var stat = fileSystem.statSync(filePath);
@@ -467,7 +450,6 @@ app.get("/files/:filename", async (request, response) => {
         });
 
         var readStream = fileSystem.createReadStream(filePath);
-        // We replaced all the event handlers with a simple call to readStream.pipe()
         readStream.pipe(response);
     }
     catch (e) {
@@ -489,7 +471,6 @@ app.listen(5000, async () => {
             database = client.db(DATABASE_NAME);
             console.log(DATABASE_COLLECTION)
             collection = database.collection(DATABASE_COLLECTION); // data storage
-            // collection = database.collection("device-data");
             unit_configuration = database.collection(DATABASE_CONFIG); // password storage
             console.log("Connected to `" + DATABASE_NAME + ":" + DATABASE_CONFIG + ", " + DATABASE_COLLECTION + "`!");
         });
