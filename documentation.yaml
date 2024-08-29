@@ -3,7 +3,7 @@ openapi: 3.0.3
 info:
   title: neatMon Open Source API
   description: |-
-    This is documentation for the neatMon Open Source API, to find out more about neatMon products please visit [https://www.neatmon.com](https://neatmon.com). 
+    This is documentation for the neatMon Open Source API, to find out more about neatMon products please visit [Our Homepage](https://www.neatmon.com). 
     
     Some useful links:
     - [Knowledge Base](https://info.neatmon.com)

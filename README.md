@@ -1,6 +1,8 @@
 # Description
 This is an example of the data services to receive data from neatMon devices.  Allows incoming data to be received, parsed, and stored in a database for later retrieval in other apps and services.
 
+## Helpful Links
+[Detailed specifications on the neatMon Open Source API can be found here.](https://neatmon-inc.github.io/neatmon.api/)
 [For assistance please contact info@neatmon.com or visit the nM user guides and documentation here.](https://info.neatmon.com/)
 
 # API Technical Overview YouTube Video
