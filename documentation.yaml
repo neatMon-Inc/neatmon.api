@@ -1,0 +1,20 @@
+openapi: 3.0.3
+info:
+  title: neatMon Open Source API
+  description: |-
+    This is documentation for the neatMon Open Source API, to find out more about neatMon products please visit [https://www.neatmon.com](https://neatmon.com). 
+    
+    Some useful links:
+    - [Knowledge Base](https://info.neatmon.com)
+  termsOfService: https://hub.neatmon.com/terms
+  contact:
+    email: info@neatmon.com
+  license:
+    name: MIT
+    url: https://github.com/neatMon-Inc/neatmon.api/blob/workerQueue/LICENSE
+  version: 1.0.11
+externalDocs:
+  description: Find out more about neatMon, Inc.
+  url: http://www.neatmon.com
+servers:
+  - url: http://api.neatmon.io
