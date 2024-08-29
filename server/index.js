@@ -454,7 +454,9 @@ app.get("/api/device/data/:m_guid", async (request, response) => {
 */
 app.get("/files/:filename", async (request, response) => {
     
-    console.log("Received a request for the file: " + request.params.filename);
+    console.log("Received a request for file: " + request.params.filename);
+    console.log("Request body: " + request.headers);
+    console.log("Request body: " + request.body);
     try {
         var filePath = path.join(FILE_DIRECTORY, request.params.filename);
         var stat = fileSystem.statSync(filePath);
