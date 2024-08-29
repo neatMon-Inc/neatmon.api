@@ -1,4 +1,5 @@
 openapi: 3.0.3
+
 info:
   title: neatMon Open Source API
   description: |-
@@ -19,7 +20,7 @@ externalDocs:
   url: http://www.neatmon.com
 
 servers:
-  - url: https://api.neatmon.com/v1
+  - url: https://api.neatmon.io:1330
     description: Production server
 
 paths:
@@ -39,47 +40,16 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                id:
-                  type: string
-                  example: "device12345"
-                hw:
-                  type: string
-                  example: "HW_Version"
-                fw:
-                  type: string
-                  example: "FW_Version"
-                pn:
-                  type: string
-                  example: "PartNumber"
-                v:
-                  type: object
-                  additionalProperties:
-                    type: object
-                    properties:
-                      ts:
-                        type: integer
-                        example: 1622547802
-                      data:
-                        type: number
-                        example: 23.5
+              $ref: '#/components/schemas/DeviceData'
       responses:
         '200':
           description: Data processed successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  t:
-                    type: integer
-                    example: 1622547802
-                  cmd:
-                    type: object
-                    description: Commands to be sent to the device, if any.
+                $ref: '#/components/schemas/CommandResponse'
         '500':
-          description: Bad unit/password or internal server error
+          description: Internal server error
 
   /api2/device/{p_guid}:
     post:
@@ -97,34 +67,37 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                id:
-                  type: string
-                  example: "device12345"
-                hw:
-                  type: string
-                  example: "HW_Version"
-                fw:
-                  type: string
-                  example: "FW_Version"
-                pn:
-                  type: string
-                  example: "PartNumber"
-                v:
-                  type: object
-                  additionalProperties:
-                    type: object
-                    properties:
-                      ts:
-                        type: integer
-                        example: 1622547802
-                      data:
-                        type: number
-                        example: 23.5
+              $ref: '#/components/schemas/DeviceData'
       responses:
         '200':
           description: Data processed successfully with CRC
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResponse'
+        '500':
+          description: Internal server error
+
+  /api/status:
+    get:
+      summary: Get the status of the API
+      description: Useful for uptime monitoring of the API by a third party.
+      responses:
+        '200':
+          description: API is working
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "API Working Mon Aug 29 2024 10:00:00 GMT+0000 (Coordinated Universal Time)"
+
+  /api/status/time:
+    get:
+      summary: Get the current time in timestamp format
+      description: Returns the current server time as a timestamp.
+      responses:
+        '200':
+          description: Current timestamp
           content:
             application/json:
               schema:
@@ -133,11 +106,63 @@ paths:
                   t:
                     type: integer
                     example: 1622547802
-                  cmd:
-                    type: object
-                    description: Commands to be sent to the device, if any.
+
+  /api/device/data/{m_guid}:
+    get:
+      summary: Get the status of a GUID
+      description: Returns all data for a given GUID starting with the latest.
+      parameters:
+        - in: path
+          name: m_guid
+          required: true
+          schema:
+            type: string
+          description: GUID of the device
+        - in: query
+          name: start
+          schema:
+            type: integer
+          description: Start time in Unix timestamp
+        - in: query
+          name: end
+          schema:
+            type: integer
+          description: End time in Unix timestamp
+      responses:
+        '200':
+          description: Data for the given GUID
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Query results exceed limits
         '500':
-          description: Bad unit/password or internal server error
+          description: Internal server error
+
+  /files/{filename}:
+    get:
+      summary: Get a file from the API server
+      description: Retrieves a file from the server, typically for firmware updates.
+      parameters:
+        - in: path
+          name: filename
+          required: true
+          schema:
+            type: string
+          description: Name of the file
+      responses:
+        '200':
+          description: File retrieved successfully
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: File not found
 
 components:
   schemas:
@@ -161,3 +186,12 @@ components:
                 type: integer
               data:
                 type: number
+
+    CommandResponse:
+      type: object
+      properties:
+        t:
+          type: integer
+        cmd:
+          type: object
+          description: Commands to be sent to the device, if any.
