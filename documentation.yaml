@@ -11,17 +11,17 @@ info:
   contact:
     email: info@neatmon.com
   license:
-    name: MIT
+    name: MIT License
     url: https://github.com/neatMon-Inc/neatmon.api/blob/workerQueue/LICENSE
   version: 1.0.11
 
 externalDocs:
-  description: Find out more about neatMon, Inc.
-  url: http://www.neatmon.com
+  description: neatMon open source API software repo
+  url: https://github.com/neatMon-Inc/neatmon.api
 
 servers:
   - url: https://api.neatmon.io:1330
-    description: Production server
+    description: neatMon API production server
 
 paths:
   /api/device/{p_guid}:
@@ -104,6 +104,7 @@ paths:
                 type: object
                 properties:
                   t:
+                    description: current time in epoch format
                     type: integer
                     example: 1622547802
 

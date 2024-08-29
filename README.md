@@ -2,11 +2,12 @@
 This is an example of the data services to receive data from neatMon devices.  Allows incoming data to be received, parsed, and stored in a database for later retrieval in other apps and services.
 
 ## Helpful Links
-[Detailed specifications on the neatMon Open Source API can be found here.](https://neatmon-inc.github.io/neatmon.api/)
-[For assistance please contact info@neatmon.com or visit the nM user guides and documentation here.](https://info.neatmon.com/)
+Detailed specifications on the neatMon Open Source API can be found [here.](https://neatmon-inc.github.io/neatmon.api/)
+
+For assistance please contact info@neatmon.com or visit the nM user guides and documentation [here.](https://info.neatmon.com/)
 
 # API Technical Overview YouTube Video
-[Please see the recorded video covering the deployment and an overview of the menu-driven setup of the Automated Monitoring Nodes here.](https://www.youtube.com/watch?v=SwGXM8TaJbA&t=304s)
+Please see the recorded video covering the deployment and an overview of the menu-driven setup of the Automated Monitoring Nodes [here.](https://www.youtube.com/watch?v=SwGXM8TaJbA&t=304s)
 
 # Getting Started
 After bringing up the neatMon API using the `make` command, the app can be reached from a web browser at the address `http://localhost/api/status` which should show the message: "API Working Sat Feb 26 2022 08:16:20 GMT+0000 (Coordinated Universal Time)" (The current time should be displayed)
