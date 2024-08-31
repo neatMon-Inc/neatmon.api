@@ -9,3 +9,7 @@ down:
 
 prune:
 	docker system prune
+
+nuke:
+	docker system prune --volumes -a -f
+
