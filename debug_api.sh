@@ -1,0 +1,1 @@
+docker logs --follow --tail 21000 api  | grep -i -A 50 -B 50 "$1"

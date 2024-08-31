@@ -10,10 +10,10 @@ For assistance please contact info@neatmon.com or visit the nM user guides and d
 Please see the recorded video covering the deployment and an overview of the menu-driven setup of the Automated Monitoring Nodes [here.](https://www.youtube.com/watch?v=SwGXM8TaJbA&t=304s)
 
 # Getting Started
-After bringing up the neatMon API using the `make` command, the app can be reached from a web browser at the address `http://localhost/api/status` which should show the message: "API Working Sat Feb 26 2022 08:16:20 GMT+0000 (Coordinated Universal Time)" (The current time should be displayed)
+See Environment Variable Setup below. Copy and edit the configuration file.  Bring up the neatMon API using the `make` command. The app can be tested from a web browser at the address `http://localhost/api/status` which should show the message: "API Working Sat Feb 26 2022 08:16:20 GMT+0000 (Coordinated Universal Time)" (The current UTC time should be displayed)
 
 # Installation
-The API requires Docker to be installed and running or can be run locally with the `node index.js` command, however, there may be issues that arise as versions differ from development environments and production, and as such Docker is the preferred method for maintaining the consistency between different environments.
+The API is designed to be deployed with Docker however it can be run also be executed locally with the `node index.js` command.  However, there may be issues that arise as versions differ from development environments and production, and as such Docker is the preferred method for maintaining the consistency between different environments.
 
 ## System requirements
 Linux system is preferred, though others can be substituted, the following packages are suggested/required
@@ -23,10 +23,10 @@ Required packages:
 * docker
 
 ## Environment Variables Setup
-Each installation may have different configurations.  To handle this, we have provided a configuration file located at: `/config/.env` additional setup is required to set up the standard Mongo user in the Mongo configuration file: `/database/init-mongo.js`  
+Each installation may have different configurations.  To handle this, we have provided a configuration file located at: `/config/.env_sample`.  Copy the `/config/.env_sample` file to `/config/.env` and make appropriate changes.  Additional setup is required to set up the standard Mongo user in the Mongo configuration file: `/database/init-mongo.js`  
 
 ## Building the complete app
-In our deployment, the app requires both a database and a server to respond to incoming requests.  We have selected MongoDB for the database, however, it can be updated with others as required.  Due to the complexity of the production environments, it might be advantageous to have a separate DB server and have decided to split the architecture at the folder level with each microservice containing its own Dockerfile.  However, to orchestrate each container, we can use Docker Compose to do this for us. 
+In our deployment, the app requires both a database and a server to respond to incoming requests.  We have selected MongoDB for the database, however, it can be updated with others as required.  Due to the complexity of the production environments, it might be advantageous to have a separate DB server and have decided to split the architecture at the folder level with each microservice containing its own Dockerfile.  However, to orchestrate each container, we can use Docker Compose to do this for us.
 
 ### Running and stopping the complete app with Docker Compose
 #### Run
@@ -47,6 +47,9 @@ From the `/server` folder, run the command `make build` to compile and save the 
 
 ### 3) Running Server App
 From the `/server` folder, run the command `make up` to run the app and see the debug messages
+
+# Debugging GUID requests and other incoming connections
+From the root directory exists two scripts that are useful for debugging in a production environment once the api has been confirmed running and is running in backgroune (e.g. no front end).  Both scripts will output the detailed log for the GUID when added as a parameter.  Note, they may need to be modified to execute with the `chmod +x deploy_*` command which will change from a normal file to a bash executable script.
 
 # Other Useful Information
 See `/server/index.js` for a complete list of routes and more detailed comments

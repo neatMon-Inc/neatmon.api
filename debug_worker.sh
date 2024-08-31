@@ -1,0 +1,1 @@
+docker logs --follow --tail 21000 neatmonapi_worker_1  | grep -i -A 50 -B 50 "$1"
