@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/Howe-Neat/neatmon.api#readme",
   "dependencies": {
-    "axios": "^0.26.0",
+    "axios": "^0.28.0",
     "bull": "^4.10.2",
     "crc": "^4.3.2",
     "dotenv": "^16.0.0",
