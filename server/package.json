@@ -26,6 +26,7 @@
     "got": ">=11.8.5",
     "isomorphic-fetch": "^3.0.0",
     "mongodb": "^4.17.0",
-    "nodemon": "3.0.1"
+    "nodemon": "3.0.1",
+    "express-rate-limit": "^7.4.0"
   }
 }

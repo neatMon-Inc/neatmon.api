@@ -7,15 +7,16 @@
 
 require('dotenv').config({}); // Get env variables
 const Express = require("express");
-var http = require('http'),
-    fileSystem = require('fs'),
-    path = require('path');
+var http = require('http');
+const fileSystem = require('fs');
+const path = require('path');
 const FILE_DIRECTORY = "/usr/src/apiFiles/";
 const BodyParser = require("body-parser");
 const MongoClient = require("mongodb").MongoClient;
 const ObjectId = require("mongodb").ObjectID;
 const bull = require('bull');
 const crc32 = require('crc/crc32');
+const rateLimit = require('express-rate-limit');
 const queue = new bull('data-queue', 'redis://redis:6379')
 
 INSIDE_NEATMON = process.env.INSIDE_NEATMON
@@ -33,8 +34,14 @@ console.log("Connecting with User: " + MONGO_DATABASE_EDITOR_USER);
 console.log("Pword: " + MONGO_DATABASE_EDITOR_PASSWORD);
 console.log("DB string " + CONNECTION_URL);
 
+const downloadLimit = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 100, // 100 requests per hour
+    message: 'Too many file download requests from this IP, please try again later'
+  });
+
 let app = Express();
-app.use(BodyParser.text({type: 'application/json'}))
+app.use(BodyParser.text({ type: 'application/json' }))
 app.use((req, res, next) => {
     if (req.body) {
         if (typeof req.body == 'string') {
@@ -70,7 +77,7 @@ app.use((req, res, next) => {
                     console.log("\n" + m_date + " - BAD post req from " + req.ip + " || Url: " + req.url);
                     console.error(e)
                     console.log('Error occurred parsing JSON. Bad JSON was sent. Sending 200 for now...')
-                    return res.status(200).send({t: Math.floor(Date.now() / 1000)})
+                    return res.status(200).send({ t: Math.floor(Date.now() / 1000) })
                 }
             }
             else {
@@ -84,7 +91,7 @@ app.use((req, res, next) => {
                     console.log("\n" + m_date + " - BAD post req from " + req.ip + " || Url: " + req.url);
                     console.error(e)
                     console.log('Error occurred parsing JSON. Bad JSON was sent. Sending 200 for now...')
-                    return res.status(200).send({t: Math.floor(Date.now() / 1000)})
+                    return res.status(200).send({ t: Math.floor(Date.now() / 1000) })
                 }
             }
         }
@@ -99,7 +106,7 @@ app.use((err, req, res, next) => {
         console.log("\n" + m_date + " - BAD post req from " + req.ip + " || Url: " + req.url);
         console.error(err)
         console.log('Error occurred parsing data. This usually means bad JSON was sent. Sending error as a response.')
-        return res.status(400).send({err: 'Bad JSON'})
+        return res.status(400).send({ err: 'Bad JSON' })
     } else {
         next()
     }
@@ -196,20 +203,20 @@ app.post("/api/device/:p_guid", async (request, response) => {
             'now': now,
         }
 
-        const deviceList = await database.collection('devices').find({serial: doc.guid}).toArray()
-        if(deviceList.length > 0){
+        const deviceList = await database.collection('devices').find({ serial: doc.guid }).toArray()
+        if (deviceList.length > 0) {
             const job = await queue.add(doc)
         } else {
             console.log(`device with GUID ${doc.guid} does not exist, data will not be inserted`)
         }
 
         // Grab any controls that are available for device that have not been executed yet
-        const controlList = await database.collection('controlQueue').find({guid: doc.guid, executed: ""}).toArray()
+        const controlList = await database.collection('controlQueue').find({ guid: doc.guid, executed: "" }).toArray()
         // Grab a command that needs to be executed on the device
-        const cmd = await database.collection('commandQueue').findOne({guid: doc.guid, executed: ""})
-        
+        const cmd = await database.collection('commandQueue').findOne({ guid: doc.guid, executed: "" })
+
         // If the device has any controls/command, they need to be sent to the device
-        if(controlList.length > 0 || cmd){
+        if (controlList.length > 0 || cmd) {
             let finalCommand = {}
             if (controlList.length > 0) {
                 finalCommand.control = []
@@ -223,18 +230,18 @@ app.post("/api/device/:p_guid", async (request, response) => {
                 if (cmd.command.cfg)
                     finalCommand.cfg = cmd.command.cfg
             }
-            console.log({t: Math.floor(Date.now() / 1000), cmd: finalCommand})
-            return response.send({t: Math.floor(Date.now() / 1000), cmd: finalCommand})    
+            console.log({ t: Math.floor(Date.now() / 1000), cmd: finalCommand })
+            return response.send({ t: Math.floor(Date.now() / 1000), cmd: finalCommand })
         } else {
-            console.log({t: Math.floor(Date.now() / 1000)})
+            console.log({ t: Math.floor(Date.now() / 1000) })
             // If there are no controls/command, just send the timestamp
-            return response.send({t: Math.floor(Date.now() / 1000)})
+            return response.send({ t: Math.floor(Date.now() / 1000) })
         }
     }
     catch (e) {
         console.log('Exception occurred at some point during the request:')
         console.log(e)
-        return response.send({t: Math.floor(Date.now() / 1000)})
+        return response.send({ t: Math.floor(Date.now() / 1000) })
     }
 });
 
@@ -303,23 +310,23 @@ app.post("/api2/device/:p_guid", async (request, response) => {
             'now': now,
         }
 
-        const deviceList = await database.collection('devices').find({serial: doc.guid}).toArray()
-        if(deviceList.length > 0){
+        const deviceList = await database.collection('devices').find({ serial: doc.guid }).toArray()
+        if (deviceList.length > 0) {
             const job = await queue.add(doc)
         } else {
             console.log(`device with GUID ${doc.guid} does not exist, data will not be inserted`)
         }
 
         //grab any controls that are available for device that have not been executed yet
-        const controlList = await database.collection('controlQueue').find({guid: doc.guid, executed: ""}).toArray()
+        const controlList = await database.collection('controlQueue').find({ guid: doc.guid, executed: "" }).toArray()
         //grab a command that needs to be executed on the device
-        const cmd = await database.collection('commandQueue').findOne({guid: doc.guid, executed: ""})
+        const cmd = await database.collection('commandQueue').findOne({ guid: doc.guid, executed: "" })
 
         // console.log(controlList)
         // console.log(cmd)
-        
+
         //if the device has any controls/command, they need to be sent to the device
-        if(controlList.length > 0 || cmd){
+        if (controlList.length > 0 || cmd) {
             let finalCommand = {}
             if (controlList.length > 0) {
                 finalCommand.control = []
@@ -337,27 +344,27 @@ app.post("/api2/device/:p_guid", async (request, response) => {
                 }
                 if (cmd.command.cfg) {
                     finalCommand.cfg = cmd.command.cfg
-                } 
+                }
             }
-            const resp = {t: Math.floor(Date.now() / 1000), cmd: finalCommand}
+            const resp = { t: Math.floor(Date.now() / 1000), cmd: finalCommand }
             const crc = crc32(JSON.stringify(resp)).toString(16)
-            console.log({resp: resp, crc: crc})
+            console.log({ resp: resp, crc: crc })
             //return the command to the device
-            return response.send({resp: resp, crc: crc})    
+            return response.send({ resp: resp, crc: crc })
         } else {
-            const resp = {t: Math.floor(Date.now() / 1000)}
+            const resp = { t: Math.floor(Date.now() / 1000) }
             const crc = crc32(JSON.stringify(resp)).toString(16)
-            console.log({resp: resp, crc: crc})
+            console.log({ resp: resp, crc: crc })
             // if there are no controls/command, just send the timestamp
-            return response.send({resp: resp, crc: crc})
+            return response.send({ resp: resp, crc: crc })
         }
     }
     catch (e) {
         console.log('Exception occurred at some point during the request:')
         console.log(e)
-        const resp = {t: Math.floor(Date.now() / 1000)}
+        const resp = { t: Math.floor(Date.now() / 1000) }
         const crc = crc32(JSON.stringify(resp)).toString(16)
-        return response.send({resp: resp, crc: crc})
+        return response.send({ resp: resp, crc: crc })
     }
 });
 
@@ -398,9 +405,9 @@ app.get("/api/device/data/:m_guid", async (request, response) => {
     const end = request.query.end;
     console.log("Received a REST data request /api/device/data/" + m_guid + ", Start: " + start + ", End: " + end);
 
-    const startDate = start ? new Date(parseInt(start  * 1000)).toISOString() : null;
+    const startDate = start ? new Date(parseInt(start * 1000)).toISOString() : null;
     const endDate = end ? new Date(parseInt(end * 1000)).toISOString() : null;
-    
+
     // {"metadata.guid" : "my-guid-here" , "timestamp" : {$gte : ISODate('2024-07-15T00:00:01.000')}}
     let query = { 'metadata.guid': m_guid };
     if (startDate || endDate) {
@@ -416,7 +423,7 @@ app.get("/api/device/data/:m_guid", async (request, response) => {
     }
 
     let sort = { 'timestamp': -1 };
-    try{
+    try {
         // console.dir(query); // See query sent by uncommenting this line, helpful for debugging
         await collection.find(query).sort(sort).toArray(function (error, result) {
             if (error) {
@@ -428,7 +435,7 @@ app.get("/api/device/data/:m_guid", async (request, response) => {
             }
             response.send(result);
         });
-    }catch(e){
+    } catch (e) {
         console.error("Error parsing incoming request: ", e);
         return response.status(500).send("API Error: Unable to find records in collection");
     }
@@ -436,25 +443,79 @@ app.get("/api/device/data/:m_guid", async (request, response) => {
 
 /*
 **  Get a file from the API server (for firmware updates)
+**  NOTE: downLoad limit sets requests to no more than 100 in an hour!
 */
-app.get("/files/:filename", async (request, response) => {
-    
-    console.log("Received a request for file: " + request.params.filename);
+app.get("/files/:filename", downloadLimit, async (request, response) => {
     try {
         var filePath = path.join(FILE_DIRECTORY, request.params.filename);
-        var stat = fileSystem.statSync(filePath);
+        // Note: the file path is internal to the docker container.  
+        //  Unless changed, in your docker-compose the local filesystem 
+        //  should direct to the folder ../apiFolder should contain the files for this route
+        console.log("Received a request for file: " + filePath);
+        if (!fileSystem.existsSync(filePath)) {
+            response.status(404).send('File not found');
+            return;
+        }
 
-        response.writeHead(200, {
-            'Content-Type': 'application/octet-stream',
-            'Content-Length': stat.size
-        });
+        const range = request.headers.range;
+        if (range) {
+            console.log("Request for file download in range: " + range);
+            var stat = fileSystem.statSync(filePath);
+            const parts = range.replace(/bytes=/, '').split('-');
+            const start = parseInt(parts[0], 10);
+            if (start > stat.size) 
+            { 
+                // Check to determine if requested starting byte is greater than file size
+                // https://www.rfc-editor.org/rfc/rfc7233#section-4.4
+                console.log("Outside start range of filesize..");
+                return response.status(416).send("Bad request.  Starting bytes out of range!");
+            }
+            var end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+            // console.log("Start: " + start + ", end: " + end);
+            if (end > stat.size) 
+            { 
+                console.log("Outside end range of filesize.  Adjusting response to available bytes and size.");
+                end = stat.size;
+            }
+            const chunksize = (end - start) + 1;
+            let contentRange = "bytes " + start + "-" + end + "/" + chunksize;
+            console.log(contentRange); // debugging
+            const file = fileSystem.createReadStream(filePath, { start, end });
 
-        var readStream = fileSystem.createReadStream(filePath);
-        readStream.pipe(response);
+            // Partial content response header
+            response.writeHead(206, {
+                'Content-Type': 'application/octet-stream',
+                'Content-Range': contentRange,
+                'Content-Length': chunksize
+            });
+
+            let downloadedBytes = 0;
+            file.on('data', function (chunk) {
+                downloadedBytes += chunk.length;
+                response.write(chunk);
+            });
+            file.on('end', function () {
+                console.log('Download completed');
+                response.end();
+            });
+            file.on('error', function (err) {
+                console.log('Error while downloading file:', err);
+                response.status(500).send('Error while downloading file');
+            });
+        } else {
+            // Full file requested
+            var stat = fileSystem.statSync(filePath);
+            response.writeHead(200, {
+                'Content-Type': 'application/octet-stream',
+                'Content-Length': stat.size
+            });
+            const file = fileSystem.createReadStream(filePath);
+            file.pipe(response);
+        }
     }
     catch (e) {
-        console.log('No file found.');
-        return response.status(404).send("No file found.");
+        console.log('Bad request.');
+        return response.status(400).send("Bad request.");
     }
 })
 
@@ -463,8 +524,8 @@ app.get("/files/:filename", async (request, response) => {
 /////////////////////////////////////////////////////////
 app.listen(5000, async () => {
     console.log("Connection: ", CONNECTION_URL)
-    try{
-        MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true}, (error, client) => {
+    try {
+        MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true }, (error, client) => {
             if (error) {
                 throw error;
             }
@@ -474,8 +535,8 @@ app.listen(5000, async () => {
             unit_configuration = database.collection(DATABASE_CONFIG); // password storage
             console.log("Connected to `" + DATABASE_NAME + ":" + DATABASE_CONFIG + ", " + DATABASE_COLLECTION + "`!");
         });
-    }catch(e){
+    } catch (e) {
         console.error("Error connecting to Mongo client: ", e);
     }
-    
+
 });
