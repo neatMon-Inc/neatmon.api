@@ -52,4 +52,5 @@ From the `/server` folder, run the command `make up` to run the app and see the 
 From the root directory exists two scripts that are useful for debugging in a production environment once the api has been confirmed running and is running in backgroune (e.g. no front end).  Both scripts will output the detailed log for the GUID when added as a parameter.  Note, they may need to be modified to execute with the `chmod +x deploy_*` command which will change from a normal file to a bash executable script.
 
 # Other Useful Information
-See `/server/index.js` for a complete list of routes and more detailed comments
+## Firmware Over The Air Updates
+When first run, the app will create a directory in the path `../apiFolder` this directory should contain the firmware to send to Automated Monitoring Nodes.  The path for the directory is configurable in the docker-compose file.
