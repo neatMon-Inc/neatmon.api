@@ -36,7 +36,7 @@ console.log("DB string " + CONNECTION_URL);
 
 const downloadLimit = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 100, // 100 requests per hour
+    max: 500, // 100 requests per hour
     message: 'Too many file download requests from this IP, please try again later'
   });
 
@@ -456,6 +456,7 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
             response.status(404).send('File not found');
             return;
         }
+        else console.log("Preparing to send file..");
 
         const range = request.headers.range;
         if (range) {
@@ -482,15 +483,19 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
             console.log(contentRange); // debugging
             const file = fileSystem.createReadStream(filePath, { start, end });
 
-            var crcString = crc32(fs.readFileSync(file, 'utf-8')).toString(16);
-            console.log("CRC for chunk: " + crcString);
+            // https://stackabuse.com/read-files-with-node-js/
+            // https://www.npmjs.com/package/crc
+            // let crcString = crc32(fs.readFileSync(file, 'utf-8')).toString(16);
+            // let crcString = "abcdefg";
+            // console.log("CRC for chunk: " + crcString);
+            // console.log(crc32(fs.readFileSync(file, 'utf-8')).toString(16));
 
             // Partial content response header
             response.writeHead(206, {
                 'Content-Type': 'application/octet-stream',
                 'Content-Range': contentRange,
-                'Content-Length': chunksize,
-                'CRC-32' : crcString
+                'Content-Length': chunksize
+                // 'CRC-32' : crcString
             });
 
             let downloadedBytes = 0;
@@ -506,13 +511,19 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
                 console.log('Error while downloading file:', err);
                 response.status(500).send('Error while downloading file');
             });
-        } else {
-            // Full file requested
+        } else { // Full file requested
+            console.log("Request for full file.  Preparing...");
             var stat = fileSystem.statSync(filePath);
+            // let crcString = crc32(fs.readFileSync(filePath, 'utf-8')).toString(16);
+            // let crcString = "abcdefg";
+            // console.log("CRC for full-file: " + crcString);
+
             response.writeHead(200, {
                 'Content-Type': 'application/octet-stream',
                 'Content-Length': stat.size
+                // 'CRC-32' : crcString
             });
+
             const file = fileSystem.createReadStream(filePath);
             file.pipe(response);
         }
