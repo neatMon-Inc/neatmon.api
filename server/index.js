@@ -482,11 +482,15 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
             console.log(contentRange); // debugging
             const file = fileSystem.createReadStream(filePath, { start, end });
 
+            var crcString = crc32(fs.readFileSync(file, 'utf-8')).toString(16);
+            console.log("CRC for chunk: " + crcString);
+
             // Partial content response header
             response.writeHead(206, {
                 'Content-Type': 'application/octet-stream',
                 'Content-Range': contentRange,
-                'Content-Length': chunksize
+                'Content-Length': chunksize,
+                'CRC-32' : crcString
             });
 
             let downloadedBytes = 0;
