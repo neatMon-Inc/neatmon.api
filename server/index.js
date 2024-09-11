@@ -36,7 +36,7 @@ console.log("DB string " + CONNECTION_URL);
 
 const downloadLimit = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 500, // 100 requests per hour
+    max: 500, // 500 requests per hour
     message: 'Too many file download requests from this IP, please try again later'
   });
 
@@ -485,31 +485,40 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
 
             // https://stackabuse.com/read-files-with-node-js/
             // https://www.npmjs.com/package/crc
-            // let crcString = crc32(fs.readFileSync(file, 'utf-8')).toString(16);
-            // let crcString = "abcdefg";
-            // console.log("CRC for chunk: " + crcString);
-            // console.log(crc32(fs.readFileSync(file, 'utf-8')).toString(16));
+            let crcValue = "";
 
-            // Partial content response header
-            response.writeHead(206, {
-                'Content-Type': 'application/octet-stream',
-                'Content-Range': contentRange,
-                'Content-Length': chunksize
-                // 'CRC-32' : crcString
-            });
-
-            let downloadedBytes = 0;
             file.on('data', function (chunk) {
-                downloadedBytes += chunk.length;
-                response.write(chunk);
+                crcValue = crc32(chunk, crcValue);
             });
             file.on('end', function () {
-                console.log('Download completed');
-                response.end();
+                console.log('CRC32 calulcation completed');
+
+                response.writeHead(206, {
+                    'Content-Type': 'application/octet-stream',
+                    'Content-Range': contentRange,
+                    'Content-Length': chunksize,
+                    'CRC-32': crcValue.toString(16),
+                });
+
+                let downloadedBytes = 0;
+                fileStream2 = fileSystem.createReadStream(filePath, { start, end });
+
+                fileStream2.on('data', function (chunk) {
+                    downloadedBytes += chunk.length;
+                    response.write(chunk);
+                });
+                fileStream2.on('end', function () {
+                    console.log('Download completed');
+                    response.end();
+                });
+                fileStream2.on('error', function (err) {
+                    console.log('Error while downloading file:', err);
+                    response.status(500).send('Error while downloading file');
+                });
             });
             file.on('error', function (err) {
-                console.log('Error while downloading file:', err);
-                response.status(500).send('Error while downloading file');
+                console.log('Error while calculating CRC32:', err);
+                response.status(500).send('Error while calculating CRC32');
             });
         } else { // Full file requested
             console.log("Request for full file.  Preparing...");
@@ -521,7 +530,6 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
             response.writeHead(200, {
                 'Content-Type': 'application/octet-stream',
                 'Content-Length': stat.size
-                // 'CRC-32' : crcString
             });
 
             const file = fileSystem.createReadStream(filePath);
@@ -529,6 +537,7 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
         }
     }
     catch (e) {
+        console.log (e);
         console.log('Bad request.');
         return response.status(400).send("Bad request.");
     }
