@@ -38,7 +38,7 @@ const downloadLimit = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 500, // 500 requests per hour
     message: 'Too many file download requests from this IP, please try again later'
-  });
+});
 
 let app = Express();
 app.use(BodyParser.text({ type: 'application/json' }))
@@ -447,97 +447,82 @@ app.get("/api/device/data/:m_guid", async (request, response) => {
 */
 app.get("/files/:filename", downloadLimit, async (request, response) => {
     try {
-        var filePath = path.join(FILE_DIRECTORY, request.params.filename);
-        // Note: the file path is internal to the docker container.  
+        // Note: the file path below is internal to the docker container.  
         //  Unless changed, in your docker-compose the local filesystem 
         //  should direct to the folder ../apiFolder should contain the files for this route
-        console.log("Received a request for file: " + filePath);
+        var filePath = path.join(FILE_DIRECTORY, request.params.filename);    
+        
+        let range = request.headers.range;
+        console.log("Received a request for file: " + filePath  + ", in range: " + range);
+
         if (!fileSystem.existsSync(filePath)) {
             response.status(404).send('File not found');
             return;
         }
-        else console.log("Preparing to send file..");
-
-        const range = request.headers.range;
-        if (range) {
-            console.log("Request for file download in range: " + range);
-            var stat = fileSystem.statSync(filePath);
-            const parts = range.replace(/bytes=/, '').split('-');
-            const start = parseInt(parts[0], 10);
-            if (start > stat.size) 
-            { 
-                // Check to determine if requested starting byte is greater than file size
-                // https://www.rfc-editor.org/rfc/rfc7233#section-4.4
-                console.log("Outside start range of filesize..");
-                return response.status(416).send("Bad request.  Starting bytes out of range!");
-            }
-            var end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-            // console.log("Start: " + start + ", end: " + end);
-            if (end > stat.size) 
-            { 
-                console.log("Outside end range of filesize.  Adjusting response to available bytes and size.");
-                end = stat.size;
-            }
-            const chunksize = (end - start) + 1;
-            let contentRange = "bytes " + start + "-" + end + "/" + chunksize;
-            console.log(contentRange); // debugging
-            const file = fileSystem.createReadStream(filePath, { start, end });
-
-            // https://stackabuse.com/read-files-with-node-js/
-            // https://www.npmjs.com/package/crc
-            let crcValue = "";
-
-            file.on('data', function (chunk) {
-                crcValue = crc32(chunk, crcValue);
-            });
-            file.on('end', function () {
-                console.log('CRC32 calulcation completed');
-
-                response.writeHead(206, {
-                    'Content-Type': 'application/octet-stream',
-                    'Content-Range': contentRange,
-                    'Content-Length': chunksize,
-                    'CRC-32': crcValue.toString(16),
-                });
-
-                let downloadedBytes = 0;
-                fileStream2 = fileSystem.createReadStream(filePath, { start, end });
-
-                fileStream2.on('data', function (chunk) {
-                    downloadedBytes += chunk.length;
-                    response.write(chunk);
-                });
-                fileStream2.on('end', function () {
-                    console.log('Download completed');
-                    response.end();
-                });
-                fileStream2.on('error', function (err) {
-                    console.log('Error while downloading file:', err);
-                    response.status(500).send('Error while downloading file');
-                });
-            });
-            file.on('error', function (err) {
-                console.log('Error while calculating CRC32:', err);
-                response.status(500).send('Error while calculating CRC32');
-            });
-        } else { // Full file requested
-            console.log("Request for full file.  Preparing...");
-            var stat = fileSystem.statSync(filePath);
-            // let crcString = crc32(fs.readFileSync(filePath, 'utf-8')).toString(16);
-            // let crcString = "abcdefg";
-            // console.log("CRC for full-file: " + crcString);
-
-            response.writeHead(200, {
-                'Content-Type': 'application/octet-stream',
-                'Content-Length': stat.size
-            });
-
-            const file = fileSystem.createReadStream(filePath);
-            file.pipe(response);
+        else if (!range) {
+            response.status(400).send('Missing range');
+            return;
         }
+
+        var stat = fileSystem.statSync(filePath);
+        const parts = range.replace(/bytes=/, '').split('-');
+        const start = parseInt(parts[0], 10);
+        if (start > stat.size) {
+            // Check to determine if requested starting byte is greater than file size
+            // https://www.rfc-editor.org/rfc/rfc7233#section-4.4
+            console.log("Outside start range of filesize..");
+            return response.status(416).send("Bad request.  Starting bytes out of range!");
+        }
+
+        var end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+        if (end > stat.size) {
+            console.log("Outside end range of filesize.  Adjusting response to available bytes and size.");
+            end = stat.size;
+        }
+
+        const chunksize = (end - start) + 1;
+        let contentRange = "bytes " + start + "-" + end + "/" + chunksize;
+        const file = fileSystem.createReadStream(filePath, { start, end });
+        let crcValue = "";
+
+        file.on('data', function (chunk) {
+            crcValue = crc32(chunk, crcValue);
+        });
+
+        file.on('end', function () {
+            response.writeHead(206, {
+                'Content-Type': 'application/octet-stream',
+                'Content-Range': contentRange,
+                'Content-Length': chunksize,
+                'CRC-32': crcValue.toString(16),
+            });
+
+            let downloadedBytes = 0;
+            fileStream2 = fileSystem.createReadStream(filePath, { start, end });
+
+            fileStream2.on('data', function (chunk) {
+                downloadedBytes += chunk.length;
+                response.write(chunk);
+            });
+
+            fileStream2.on('end', function () {
+                console.log('Download completed');
+                response.end();
+            });
+
+            fileStream2.on('error', function (err) {
+                console.log('Error while downloading file:', err);
+                response.status(500).send('Error while downloading file');
+            });
+        });
+
+        file.on('error', function (err) {
+            console.log('Error while calculating CRC32:', err);
+            response.status(500).send('Error while calculating CRC32');
+        });
     }
     catch (e) {
-        console.log (e);
+        console.log(e);
         console.log('Bad request.');
         return response.status(400).send("Bad request.");
     }
