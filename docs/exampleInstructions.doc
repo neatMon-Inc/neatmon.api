@@ -1,0 +1,18 @@
+= Overview of Testing the API with a POST request =
+A script `exampleCURL_21d23.sh` is included for reference to enable testing of a local development environment.  
+
+= Executing test script =
+To execute the script, from a bash shell enter `./exampleCURL_21d23.sh`, the server should respond with the current time in epoch:
+
+`api       |
+api       | Fri Sep 13 2024 20:41:22 GMT+0000 (Coordinated Universal Time) - Post req from ::ffff:172.18.0.1 || GUID:437870dc-0984-492f-91c4-42c007621d23; ID:21d23
+api       | GUID/ID: 437870dc-0984-492f-91c4-42c007621d23
+api       | HW: 204
+api       | FW: 113
+api       | PN: undefined
+api       | Length: 559
+api       | device with GUID 437870dc-0984-492f-91c4-42c007621d23 does not exist, data will not be inserted
+api       | { t: 1726260082 }`
+
+= More information =
+The `exampleJSON_POST_Body_21d23.txt` file is also provided for reference to see the JSON object outside of the CURL command.
