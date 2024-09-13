@@ -7,7 +7,7 @@
 
 require('dotenv').config({}); // Get env variables
 const Express = require("express");
-var http = require('http');
+const http = require('http');
 const fileSystem = require('fs');
 const path = require('path');
 const FILE_DIRECTORY = "/usr/src/apiFiles/";
@@ -36,11 +36,37 @@ console.log("DB string " + CONNECTION_URL);
 
 const downloadLimit = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 500, // 500 requests per hour
+    max: 500, // max number of requests from device/ip
     message: 'Too many file download requests from this IP, please try again later'
 });
 
-let app = Express();
+/////////////////////////////////////////////////////////
+/////   DATABASE CONNECTOR                          /////
+/////////////////////////////////////////////////////////
+const app = Express();
+const server = http.createServer({}, app).listen(5000, async () => {
+    console.log("Connection: ", CONNECTION_URL)
+    try {
+        MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true }, (error, client) => {
+            if (error) {
+                throw error;
+            }
+            database = client.db(DATABASE_NAME);
+            console.log(DATABASE_COLLECTION)
+            collection = database.collection(DATABASE_COLLECTION); // data storage
+            unit_configuration = database.collection(DATABASE_CONFIG); // password storage
+            console.log("Connected to `" + DATABASE_NAME + ":" + DATABASE_CONFIG + ", " + DATABASE_COLLECTION + "`!");
+        });
+    } catch (e) {
+        console.error("Error connecting to Mongo client: ", e);
+    }
+
+});
+
+// HTTP Socket Timeouts and KeepAlive for OTA
+server.keepAliveTimeout = (60 * 1000) + 1000;
+server.headersTimeout = (60 * 1000) + 2000;
+
 app.use(BodyParser.text({ type: 'application/json' }))
 app.use((req, res, next) => {
     if (req.body) {
@@ -527,25 +553,3 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
         return response.status(400).send("Bad request.");
     }
 })
-
-/////////////////////////////////////////////////////////
-/////   DATABASE CONNECTOR                          /////
-/////////////////////////////////////////////////////////
-app.listen(5000, async () => {
-    console.log("Connection: ", CONNECTION_URL)
-    try {
-        MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true }, (error, client) => {
-            if (error) {
-                throw error;
-            }
-            database = client.db(DATABASE_NAME);
-            console.log(DATABASE_COLLECTION)
-            collection = database.collection(DATABASE_COLLECTION); // data storage
-            unit_configuration = database.collection(DATABASE_CONFIG); // password storage
-            console.log("Connected to `" + DATABASE_NAME + ":" + DATABASE_CONFIG + ", " + DATABASE_COLLECTION + "`!");
-        });
-    } catch (e) {
-        console.error("Error connecting to Mongo client: ", e);
-    }
-
-});
