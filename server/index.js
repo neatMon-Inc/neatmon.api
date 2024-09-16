@@ -35,7 +35,7 @@ console.log("Pword: " + MONGO_DATABASE_EDITOR_PASSWORD);
 console.log("DB string " + CONNECTION_URL);
 
 const downloadLimit = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
+    windowMs: 15 * 60 * 1000, // 1 hour
     max: 500, // max number of requests from device/ip
     message: 'Too many file download requests from this IP, please try again later'
 });
