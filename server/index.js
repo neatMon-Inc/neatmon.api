@@ -496,14 +496,14 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
         if (start > stat.size) {
             // Check to determine if requested starting byte is greater than file size
             // https://www.rfc-editor.org/rfc/rfc7233#section-4.4
-            console.log("Outside start range of filesize..");
+            console.log("Request outside start byte range of file..");
             return response.status(416).send("Bad request.  Starting bytes out of range!");
         }
 
         var end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
         if (end > stat.size) {
             console.log("Outside end range of filesize.  Adjusting response to available bytes and size.");
-            end = stat.size;
+            end = stat.size - 1;
         }
 
         const chunksize = (end - start) + 1;
