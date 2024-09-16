@@ -501,7 +501,7 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
         }
 
         var end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-        if (end > stat.size) {
+        if (end >= stat.size) {
             console.log("Outside end range of filesize.  Adjusting response to available bytes and size.");
             end = stat.size - 1;
         }
