@@ -30,9 +30,6 @@ const DATABASE_COLLECTION = process.env.MONGO_DATABASE_COLLECTION_DATA;
 const DATABASE_CONFIG = process.env.MONGO_DATABASE_COLLECTION_CONFIGURATION;
 const MONGO_DATABASE_EDITOR_USER = process.env.MONGO_DATABASE_EDITOR_USER;
 const MONGO_DATABASE_EDITOR_PASSWORD = process.env.MONGO_DATABASE_EDITOR_PASSWORD;
-console.log("Connecting with User: " + MONGO_DATABASE_EDITOR_USER);
-console.log("Pword: " + MONGO_DATABASE_EDITOR_PASSWORD);
-console.log("DB string " + CONNECTION_URL);
 
 const downloadLimit = rateLimit({
     windowMs: 15 * 60 * 1000, // 1 hour
@@ -168,7 +165,7 @@ async function checkPword(p_pword, p_guid) {
 //////////////////////////////////////////////////////////
 //// POST METHODS                                   //////
 //////////////////////////////////////////////////////////
-app.post("/api/device/:p_guid", async (request, response) => {
+app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
     try {
         // If it is desired to maintain a separate record of when the data is received as opposed to 
         //   recorded then consider the code below for a starting point.  Add the m_date to the doc object
@@ -292,14 +289,14 @@ app.post("/api/device/:p_guid", async (request, response) => {
 /*
 ** Get the status of the API, useful for uptime monitoring of the API by a third party
 */
-app.get("/api/status", async (request, response) => {
+app.get("/api/status", downloadLimit, async (request, response) => {
     response.send("API Working " + Date());
 });
 
 /*
 ** Get the current time in timestamp format
 */
-app.get("/api/status/time", async (request, response) => {
+app.get("/api/status/time", downloadLimit, async (request, response) => {
     let res = {
         "t": Date.now()
     }
@@ -310,7 +307,7 @@ app.get("/api/status/time", async (request, response) => {
 ** Get the status of a GUID passed as parameter
 ** Returns all data for a given GUID starting with the latest
 */
-app.get("/api/device/data/:m_guid", async (request, response) => {
+app.get("/api/device/data/:m_guid", downloadLimit, async (request, response) => {
     const m_guid = request.params.m_guid;
     const start = request.query.start;
     const end = request.query.end;
