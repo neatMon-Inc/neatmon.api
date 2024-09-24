@@ -17,8 +17,7 @@ const MONGO_DATABASE_EDITOR_USER = process.env.MONGO_DATABASE_EDITOR_USER;
 const MONGO_DATABASE_EDITOR_PASSWORD = process.env.MONGO_DATABASE_EDITOR_PASSWORD;
 
 async function connectToDatabase() {
-    console.log("Connecting with User: " + MONGO_DATABASE_EDITOR_USER);
-    console.log("pword: " + MONGO_DATABASE_EDITOR_PASSWORD);
+    console.log("Connecting to database");
     try {
         const client = await MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true })
         database = client.db(DATABASE_NAME);
@@ -35,7 +34,7 @@ async function connectToDatabase() {
 
 queue.process(async (job, done) => {
     if (!database || !collection) {
-        console.log('Establishing connection to database...')
+        console.log('Re-establishing connection to database...')
         await connectToDatabase();
     }
     const metadataSet = new Set()

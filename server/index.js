@@ -204,7 +204,6 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         // Parse headers for content and crc
         const length = request.get('Content-Length');
         let incomingCRC = request.get('CRC-32');
-        incomingCRC = incomingCRC.toLowerCase();
 
         console.log("GUID/ID: " + request.params.p_guid);
         console.log("HW: " + request.body.hw); // not included in every post
@@ -218,6 +217,7 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         }
         else
         {
+            incomingCRC = incomingCRC.toLowerCase();
             console.log("Provided CRC-32: " + incomingCRC);
             const calculatedIncomingCRC = crc32(JSON.stringify(request.body)).toString(16);
             console.log("Calculated CRC-32: " + calculatedIncomingCRC);
