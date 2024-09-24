@@ -203,7 +203,8 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
 
         // Parse headers for content and crc
         const length = request.get('Content-Length');
-        const incomingCRC = request.get('CRC-32');
+        let incomingCRC = request.get('CRC-32');
+        incomingCRC = incomingCRC.toLowerCase();
 
         console.log("GUID/ID: " + request.params.p_guid);
         console.log("HW: " + request.body.hw); // not included in every post
@@ -213,14 +214,19 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
 
         if (!incomingCRC)
         { // Older firmware support without CRC checks
-            console.log("WARNING: No CRC included in post.  Skipping CRC checks.  Recommend updating firmware.")
+            console.log("WARNING: No CRC included in post, skipping CRC checks.  Recommend updating firmware, contact nM support.")
         }
         else
         {
-            console.log("CRC-32: " + incomingCRC);
-            const calculatedIncomingCRC = crc32(JSON.stringify(request.body)).toString(16)
-            console.log("Calculated Request CRC: " + calculatedIncomingCRC);
-            if (incomingCRC != calculatedIncomingCRC) console.log("Mismatch CRC!");
+            console.log("Provided CRC-32: " + incomingCRC);
+            const calculatedIncomingCRC = crc32(JSON.stringify(request.body)).toString(16);
+            console.log("Calculated CRC-32: " + calculatedIncomingCRC);
+            if (incomingCRC != calculatedIncomingCRC)
+            {
+                console.log("CRC ERR");
+                return res.status(400).send({ err: 'CRC ERR' });
+            }
+            else console.log("CRC-32: OK");
         }
 
         // If these are not included in the body, they will not be used in the db insert
