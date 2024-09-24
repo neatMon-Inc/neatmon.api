@@ -78,7 +78,7 @@ queue.process(async (job, done) => {
                 job.data.v[sensor].forEach((entry) => {
                     const timestamp = entry.ts
                     timestamps.push(new Date(timestamp))
-                    if (entry.rs != null && timestamp != null) {
+                    if (entry.rs != null && timestamp != null) { // Signal strength
                         const id = new ObjectId()
                         docArray.push({
                             metadata: {
@@ -98,7 +98,27 @@ queue.process(async (job, done) => {
                             alias: [''],
                         }))
                     }
-                    if (entry.loc) {
+                    if (entry.sq != null && timestamp != null) { // Signal quality
+                        const id = new ObjectId()
+                        docArray.push({
+                            metadata: {
+                                id: id,
+                                guid: job.data.guid,
+                                sensor: sensor,
+                                type: 'rsrq',
+                            },
+                            timestamp: new Date(timestamp * 1000),
+                            data: entry.sq,
+                        })
+                        metadataSet.add(JSON.stringify({
+                            guid: job.data.guid,
+                            sensor: sensor,
+                            node: 'rsrq',
+                            nodeType: 'singular',
+                            alias: [''],
+                        }))
+                    }
+                    if (entry.loc) { // GPS location
                         if (entry.loc[0] != null && entry.loc[1] != null && entry.loc[2] != null) {
                             locationUpdate = JSON.stringify({
                                 lat: entry.loc[0],

@@ -30,9 +30,6 @@ const DATABASE_COLLECTION = process.env.MONGO_DATABASE_COLLECTION_DATA;
 const DATABASE_CONFIG = process.env.MONGO_DATABASE_COLLECTION_CONFIGURATION;
 const MONGO_DATABASE_EDITOR_USER = process.env.MONGO_DATABASE_EDITOR_USER;
 const MONGO_DATABASE_EDITOR_PASSWORD = process.env.MONGO_DATABASE_EDITOR_PASSWORD;
-console.log("Connecting with User: " + MONGO_DATABASE_EDITOR_USER);
-console.log("Pword: " + MONGO_DATABASE_EDITOR_PASSWORD);
-console.log("DB string " + CONNECTION_URL);
 
 const downloadLimit = rateLimit({
     windowMs: 15 * 60 * 1000, // 1 hour
@@ -63,7 +60,7 @@ const server = http.createServer({}, app).listen(5000, async () => {
 
 });
 
-// HTTP Socket Timeouts and KeepAlive for OTA
+// HTTP Socket Timeouts and KeepAlive for incoming HTTP requests
 server.keepAliveTimeout = (60 * 1000) + 1000;
 server.headersTimeout = (60 * 1000) + 2000;
 
@@ -168,7 +165,7 @@ async function checkPword(p_pword, p_guid) {
 //////////////////////////////////////////////////////////
 //// POST METHODS                                   //////
 //////////////////////////////////////////////////////////
-app.post("/api/device/:p_guid", async (request, response) => {
+app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
     try {
         // If it is desired to maintain a separate record of when the data is received as opposed to 
         //   recorded then consider the code below for a starting point.  Add the m_date to the doc object
@@ -204,18 +201,38 @@ app.post("/api/device/:p_guid", async (request, response) => {
         else if (request.body.id.length > 5 && request.body.id == request.params.p_guid) m_guid = request.body.id; // Long string for GUID provided
         else return response.status(500).send("Bad unit/password"); // Catch all for bad guid or undefined guid in post
 
-        const length = request.get('Content-Length')
+        // Parse headers for content and crc
+        const length = request.get('Content-Length');
+        let incomingCRC = request.get('CRC-32');
+        incomingCRC = incomingCRC.toLowerCase();
 
         console.log("GUID/ID: " + request.params.p_guid);
         console.log("HW: " + request.body.hw); // not included in every post
         console.log("FW: " + request.body.fw); // not included in every post
-        console.log("PN: " + request.body.pn) // not included in every post
-        console.log("Length: " + length)
+        console.log("PN: " + request.body.pn); // not included in every post
+        console.log("Length: " + length);
+
+        if (!incomingCRC)
+        { // Older firmware support without CRC checks
+            console.log("WARNING: No CRC included in post, skipping CRC checks.  Recommend updating firmware, contact nM support.")
+        }
+        else
+        {
+            console.log("Provided CRC-32: " + incomingCRC);
+            const calculatedIncomingCRC = crc32(JSON.stringify(request.body)).toString(16);
+            console.log("Calculated CRC-32: " + calculatedIncomingCRC);
+            if (incomingCRC != calculatedIncomingCRC)
+            {
+                console.log("CRC ERR");
+                return res.status(400).send({ err: 'CRC ERR' });
+            }
+            else console.log("CRC-32: OK");
+        }
 
         // If these are not included in the body, they will not be used in the db insert
-        m_hw_id = request.body.hw;
-        m_fw_id = request.body.fw;
-        m_pn_id = request.body.pn;
+        var m_hw_id = request.body.hw;
+        var m_fw_id = request.body.fw;
+        var m_pn_id = request.body.pn;
 
         const doc = {
             "guid": request.params.p_guid,
@@ -231,166 +248,43 @@ app.post("/api/device/:p_guid", async (request, response) => {
 
         const deviceList = await database.collection('devices').find({ serial: doc.guid }).toArray()
         if (deviceList.length > 0) {
-            const job = await queue.add(doc)
+            const job = await queue.add(doc);
         } else {
-            console.log(`device with GUID ${doc.guid} does not exist, data will not be inserted`)
+            console.log(`device with GUID ${doc.guid} does not exist, data will not be inserted`);
         }
 
         // Grab any controls that are available for device that have not been executed yet
-        const controlList = await database.collection('controlQueue').find({ guid: doc.guid, executed: "" }).toArray()
+        const controlList = await database.collection('controlQueue').find({ guid: doc.guid, executed: "" }).toArray();
         // Grab a command that needs to be executed on the device
-        const cmd = await database.collection('commandQueue').findOne({ guid: doc.guid, executed: "" })
+        const cmd = await database.collection('commandQueue').findOne({ guid: doc.guid, executed: "" });
 
         // If the device has any controls/command, they need to be sent to the device
         if (controlList.length > 0 || cmd) {
             let finalCommand = {}
             if (controlList.length > 0) {
-                finalCommand.control = []
+                finalCommand.control = [];
                 controlList.forEach((ctrl) => {
-                    finalCommand.control.push(ctrl.control)
+                    finalCommand.control.push(ctrl.control);
                 })
             }
             if (cmd) {
                 if (cmd.command.fwu)
-                    finalCommand.fwu = cmd.command.fwu
+                    finalCommand.fwu = cmd.command.fwu;
                 if (cmd.command.cfg)
-                    finalCommand.cfg = cmd.command.cfg
+                    finalCommand.cfg = cmd.command.cfg;
             }
-            console.log({ t: Math.floor(Date.now() / 1000), cmd: finalCommand })
-            return response.send({ t: Math.floor(Date.now() / 1000), cmd: finalCommand })
+            console.log({ t: Math.floor(Date.now() / 1000), cmd: finalCommand });
+            return response.send({ t: Math.floor(Date.now() / 1000), cmd: finalCommand });
         } else {
             console.log({ t: Math.floor(Date.now() / 1000) })
             // If there are no controls/command, just send the timestamp
-            return response.send({ t: Math.floor(Date.now() / 1000) })
+            return response.send({ t: Math.floor(Date.now() / 1000) });
         }
     }
     catch (e) {
-        console.log('Exception occurred at some point during the request:')
-        console.log(e)
-        return response.send({ t: Math.floor(Date.now() / 1000) })
-    }
-});
-
-
-//VERSION 2 OF THE POST ROUTE
-//  This includes a CRC in the response
-app.post("/api2/device/:p_guid", async (request, response) => {
-    try {
-        // If it is desired to maintain a separate record of when the data is received as opposed to 
-        //   recorded then consider the code below for a starting point.  Add the m_date to the doc object
-        //   too.
-        let now = new Date(); // Get the date/time
-        let m_date = new Date(now.toISOString()); // Convert to ISO format
-
-        console.log("\n" + m_date + " - Post req from " + request.ip + " || GUID:" + request.params.p_guid + "; ID:" + request.body.id);
-
-        // Record the incoming request to the requests cache
-        await database.collection('deviceApiRequestsCache').insertOne({
-            route: 'v2',
-            dateOfRequest: now,
-            connectionIP: request.ip,
-            guid: request.params.p_guid,
-            postHeaders: request.headers,
-            postBody: request.body,
-        })
-
-        if (!request.body?.id) return response.status(500).send("Bad unit/password"); // No ID included in post!
-
-        // First check that the GUID is matching
-        //   The incoming post can either be the full GUID string, or the shortened string
-        //   To reduce payload size the GUID will be shortened to the last 5 digits in the body of the post
-
-        let m_guid = request.body.id;
-
-        if (request.body.id.length == 5) { // short string provided
-            m_guid = request.body.id;
-            cutString = request.params.p_guid.length - 5;
-            if (m_guid != request.params.p_guid.substring(cutString)) return response.status(500).send("ShortID Bad unit/password");
-        }
-        else if (request.body.id.length > 5 && request.body.id == request.params.p_guid) m_guid = request.body.id; // Long string for GUID provided
-        else return response.status(500).send("Bad unit/password"); // Catch all for bad guid or undefined guid in post
-
-        const length = request.get('Content-Length')
-
-        // console.log("Post content: ");
-        console.log("GUID/ID: " + request.params.p_guid);
-        console.log("HW: " + request.body.hw); // not included in every post
-        console.log("FW: " + request.body.fw); // not included in every post
-        console.log("PN: " + request.body.pn) // not included in every post
-        console.log("Length: " + length)
-
-        // If these are not included in the body, they will not be used in the db insert
-        m_hw_id = request.body.hw;
-        m_fw_id = request.body.fw;
-        m_pn_id = request.body.pn;
-
-        const doc = {
-            "guid": request.params.p_guid,
-            "hw": m_hw_id,
-            "fw": m_fw_id,
-            "pn": m_pn_id,
-            "d": m_date,
-            "v": request.body.v,
-            "body": request.body,
-            "length": length,
-            'now': now,
-        }
-
-        const deviceList = await database.collection('devices').find({ serial: doc.guid }).toArray()
-        if (deviceList.length > 0) {
-            const job = await queue.add(doc)
-        } else {
-            console.log(`device with GUID ${doc.guid} does not exist, data will not be inserted`)
-        }
-
-        //grab any controls that are available for device that have not been executed yet
-        const controlList = await database.collection('controlQueue').find({ guid: doc.guid, executed: "" }).toArray()
-        //grab a command that needs to be executed on the device
-        const cmd = await database.collection('commandQueue').findOne({ guid: doc.guid, executed: "" })
-
-        // console.log(controlList)
-        // console.log(cmd)
-
-        //if the device has any controls/command, they need to be sent to the device
-        if (controlList.length > 0 || cmd) {
-            let finalCommand = {}
-            if (controlList.length > 0) {
-                finalCommand.control = []
-                controlList.forEach((ctrl) => {
-                    finalCommand.control.push(ctrl.control)
-                })
-            }
-            if (cmd) {
-                if (cmd.command.fwu) {
-                    finalCommand.fwu = cmd.command.fwu
-                    console.log(cmd.command.fwu.uri.substring(cmd.command.fwu.uri.lastIndexOf('/') + 1));
-                    const filePath = path.join(FILE_DIRECTORY, cmd.command.fwu.uri.substring(cmd.command.fwu.uri.lastIndexOf('/') + 1));
-                    const fileCRC = crc32(fileSystem.readFileSync(filePath, 'utf-8')).toString(16);
-                    finalCommand.fwu.crc = fileCRC
-                }
-                if (cmd.command.cfg) {
-                    finalCommand.cfg = cmd.command.cfg
-                }
-            }
-            const resp = { t: Math.floor(Date.now() / 1000), cmd: finalCommand }
-            const crc = crc32(JSON.stringify(resp)).toString(16)
-            console.log({ resp: resp, crc: crc })
-            //return the command to the device
-            return response.send({ resp: resp, crc: crc })
-        } else {
-            const resp = { t: Math.floor(Date.now() / 1000) }
-            const crc = crc32(JSON.stringify(resp)).toString(16)
-            console.log({ resp: resp, crc: crc })
-            // if there are no controls/command, just send the timestamp
-            return response.send({ resp: resp, crc: crc })
-        }
-    }
-    catch (e) {
-        console.log('Exception occurred at some point during the request:')
-        console.log(e)
-        const resp = { t: Math.floor(Date.now() / 1000) }
-        const crc = crc32(JSON.stringify(resp)).toString(16)
-        return response.send({ resp: resp, crc: crc })
+        console.log('Exception occurred at some point during the request:');
+        console.log(e);
+        return response.send({ t: Math.floor(Date.now() / 1000) });
     }
 });
 
@@ -399,22 +293,16 @@ app.post("/api2/device/:p_guid", async (request, response) => {
 //////////////////////////////////////////////////////////
 
 /*
-** !! Note the following methods, are not necessary for the purpose of communication with nM devices
-** !! The GET methods are included for diagnostic purposes, and are especially useful for initial implementation testing
-** !! These methods may be removed for production deployments
-*/
-
-/*
 ** Get the status of the API, useful for uptime monitoring of the API by a third party
 */
-app.get("/api/status", async (request, response) => {
+app.get("/api/status", downloadLimit, async (request, response) => {
     response.send("API Working " + Date());
 });
 
 /*
 ** Get the current time in timestamp format
 */
-app.get("/api/status/time", async (request, response) => {
+app.get("/api/status/time", downloadLimit, async (request, response) => {
     let res = {
         "t": Date.now()
     }
@@ -425,7 +313,7 @@ app.get("/api/status/time", async (request, response) => {
 ** Get the status of a GUID passed as parameter
 ** Returns all data for a given GUID starting with the latest
 */
-app.get("/api/device/data/:m_guid", async (request, response) => {
+app.get("/api/device/data/:m_guid", downloadLimit, async (request, response) => {
     const m_guid = request.params.m_guid;
     const start = request.query.start;
     const end = request.query.end;
