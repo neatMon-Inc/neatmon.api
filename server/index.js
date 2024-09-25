@@ -273,12 +273,43 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
                 if (cmd.command.cfg)
                     finalCommand.cfg = cmd.command.cfg;
             }
-            console.log({ t: Math.floor(Date.now() / 1000), cmd: finalCommand });
-            return response.send({ t: Math.floor(Date.now() / 1000), cmd: finalCommand });
+
+            // construct the response
+            const responseBody = JSON.stringify({ t: Math.floor(Date.now() / 1000), cmd: finalCommand });
+            const responseBodyCrc = crc32(responseBody).toString(16);
+
+            console.log(responseBody);
+            console.log("Response body CRC-32: " + responseBodyCrc);
+            // write header
+            response.writeHead(200, {
+                'Content-Type': 'application/json',
+                'CRC-32': responseBodyCrc.toString(16),
+            });
+
+            // write body
+            response.write(responseBody);
+            response.end();
+            // return response.send({ t: Math.floor(Date.now() / 1000), cmd: finalCommand });
         } else {
-            console.log({ t: Math.floor(Date.now() / 1000) })
+            const responseBody = JSON.stringify({ t: Math.floor(Date.now() / 1000) });
+            const responseBodyCrc = crc32(responseBody).toString(16);
+
+            console.log(responseBody);
+            console.log("Response body CRC-32: " + responseBodyCrc);
+
+            // write header
+            response.writeHead(200, {
+                'Content-Type': 'application/json',
+                'CRC-32': responseBodyCrc.toString(16),
+            });
+
+            // write body
+            response.write(responseBody);
+            response.end();
+
+            // console.log({ t: Math.floor(Date.now() / 1000) })
             // If there are no controls/command, just send the timestamp
-            return response.send({ t: Math.floor(Date.now() / 1000) });
+            // return response.send({ t: Math.floor(Date.now() / 1000) });
         }
     }
     catch (e) {
