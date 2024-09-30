@@ -90,46 +90,44 @@ app.use((req, res, next) => {
                 console.log('Removing the follow key/value pair from the request: `' + badString + '`')
                 const newString = req.body.substring(0, startIndex) + req.body.substring(endIndex + 1, req.body.length)
                 console.log('Successfully removed the "pn" key and value. Now processing request.')
-                //adding a try catch. Some devices are sending bad JSON. Returning a 200 for now.
                 try {
                     req.body = JSON.parse(newString)
                 }
                 catch (e) {
                     let now = new Date(); // Get the date/time
                     let m_date = new Date(now.toISOString()); // Convert to ISO format
+                    console.log("\ERROR with incoming request:\n\tDate:\t" + m_date + "\n\tFrom:\t" + req.ip + "\n\tGUID:\t" + req.params.p_guid + "\n\tID:\t" + req.body.id);
                     console.log("\n" + m_date + " - BAD post req from " + req.ip + " || Url: " + req.url);
-                    console.error(e)
-                    console.log('Error occurred parsing JSON. Bad JSON was sent. Sending 200 for now...')
-                    return res.status(200).send({ t: Math.floor(Date.now() / 1000) })
+                    console.error(e);
+                    return res.status(400).send({ err: 'Bad request/data' });
                 }
             }
             else {
-                // Adding a try catch. Some devices are sending bad JSON. Returning a 200 for now.
                 try {
                     req.body = JSON.parse(req.body)
                 }
                 catch (e) {
                     let now = new Date(); // Get the date/time
                     let m_date = new Date(now.toISOString()); // Convert to ISO format
-                    console.log("\n" + m_date + " - BAD post req from " + req.ip + " || Url: " + req.url);
-                    console.error(e)
-                    console.log('Error occurred parsing JSON. Bad JSON was sent. Sending 200 for now...')
-                    return res.status(200).send({ t: Math.floor(Date.now() / 1000) })
+                    console.log("\ERROR with incoming request:\n\tDate:\t" + m_date + "\n\tFrom:\t" + req.ip + "\n\tGUID:\t" + req.params.p_guid + "\n\tID:\t" + req.body.id);
+                    console.error(e);
+                    console.log('Error occurred parsing JSON. Bad data was sent.');
+                    return res.status(400).send({ err: 'Bad request/data' });
                 }
             }
         }
     }
-    next()
+    next();
 })
 
 app.use((err, req, res, next) => {
     if (err) {
         let now = new Date(); // Get the date/time
         let m_date = new Date(now.toISOString()); // Convert to ISO format
-        console.log("\n" + m_date + " - BAD post req from " + req.ip + " || Url: " + req.url);
-        console.error(err)
-        console.log('Error occurred parsing data. This usually means bad JSON was sent. Sending error as a response.')
-        return res.status(400).send({ err: 'Bad JSON' })
+        console.log("\ERROR with incoming request:\n\tDate:\t" + m_date + "\n\tFrom:\t" + req.ip + "\n\tGUID:\t" + req.params.p_guid + "\n\tID:\t" + req.body.id);
+        console.error(err);
+        console.log('Bad JSON was sent, sending error as a response.');
+        return res.status(400).send({ err: 'Bad JSON' });
     } else {
         next()
     }
@@ -173,7 +171,7 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         let now = new Date(); // Get the date/time
         let m_date = new Date(now.toISOString()); // Convert to ISO format
 
-        console.log("\n" + m_date + " - Post req from " + request.ip + " || GUID:" + request.params.p_guid + "; ID:" + request.body.id);
+        console.log("\nIncoming request:\n\tDate:\t" + m_date + "\n\tFrom:\t" + request.ip + "\n\tGUID:\t" + request.params.p_guid + "\n\tID:\t" + request.body.id);
 
         // Record the incoming request to the requests cache
         await database.collection('deviceApiRequestsCache').insertOne({
@@ -205,12 +203,13 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         const length = request.get('Content-Length');
         let incomingCRC = request.get('CRC-32');
 
-        console.log("GUID/ID: " + request.params.p_guid);
-        console.log("HW: " + request.body.hw); // not included in every post
-        console.log("FW: " + request.body.fw); // not included in every post
-        console.log("PN: " + request.body.pn); // not included in every post
-        console.log("Length: " + length);
-
+        console.log("Post/Body:")
+        console.log("\tGUID:\t" + request.params.p_guid);
+        console.log("\tHW:\t" + request.body.hw); // not included in every post
+        console.log("\tFW:\t" + request.body.fw); // not included in every post
+        console.log("\tPN:\t" + request.body.pn); // not included in every post
+        console.log("Post/Length:\t" + length);
+        console.log("Post/CRC-32:");
         if (!incomingCRC)
         { // Older firmware support without CRC checks
             console.log("WARNING: No CRC included in post, skipping CRC checks.  Recommend updating firmware, contact nM support.")
@@ -218,15 +217,15 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         else
         {
             incomingCRC = incomingCRC.toLowerCase();
-            console.log("Provided CRC-32: " + incomingCRC);
+            console.log("\tProvided:\t" + incomingCRC);
             const calculatedIncomingCRC = crc32(JSON.stringify(request.body)).toString(16);
-            console.log("Calculated CRC-32: " + calculatedIncomingCRC);
+            console.log("\tCalculated:\t" + calculatedIncomingCRC);
             if (incomingCRC != calculatedIncomingCRC)
             {
-                console.log("CRC ERR");
-                return res.status(400).send({ err: 'CRC ERR' });
+                console.log("\tCRC-32:\tERR");
+                return res.status(400).send({ err: 'CRC-32: ERR' });
             }
-            else console.log("CRC-32: OK");
+            else console.log("\tCRC-32:\tOK");
         }
 
         // If these are not included in the body, they will not be used in the db insert
@@ -250,7 +249,7 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         if (deviceList.length > 0) {
             const job = await queue.add(doc);
         } else {
-            console.log(`device with GUID ${doc.guid} does not exist, data will not be inserted`);
+            console.log(`Error:\n\tDevice with GUID ${doc.guid} does not exist, data will not be inserted`);
         }
 
         // Grab any controls that are available for device that have not been executed yet
@@ -258,7 +257,7 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         // Grab a command that needs to be executed on the device
         const cmd = await database.collection('commandQueue').findOne({ guid: doc.guid, executed: "" });
 
-        // If the device has any controls/command, they need to be sent to the device
+        console.log("Response:"); // Now we form the response, and if the device has any controls/command, they need to be sent to the device in the body
         if (controlList.length > 0 || cmd) {
             let finalCommand = {}
             if (controlList.length > 0) {
@@ -278,16 +277,17 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
             const responseBody = JSON.stringify({ t: Math.floor(Date.now() / 1000), cmd: finalCommand });
             const responseBodyCrc = crc32(responseBody).toString(16);
 
-            console.log(responseBody);
-            console.log("Response body CRC-32: " + responseBodyCrc);
-            // write header
+            console.log("\tBody:\t" + responseBody);
+            console.log("\tHeader/CRC-32:\t" + responseBodyCrc);
+
+            // Header
             response.writeHead(200, {
                 'Content-Type': 'application/json',
                 'Content-Length': responseBody.length,
                 'CRC-32': responseBodyCrc.toString(16),
             });
 
-            // write body
+            // Body
             response.write(responseBody);
             response.end();
             // return response.send({ t: Math.floor(Date.now() / 1000), cmd: finalCommand });
@@ -295,23 +295,19 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
             const responseBody = JSON.stringify({ t: Math.floor(Date.now() / 1000) });
             const responseBodyCrc = crc32(responseBody).toString(16);
 
-            console.log(responseBody);
-            console.log("Response body CRC-32: " + responseBodyCrc);
+            console.log("\tBody: " + responseBody);
+            console.log("\tHeader/CRC-32: " + responseBodyCrc);
 
-            // write header
+            // Header
             response.writeHead(200, {
                 'Content-Type': 'application/json',
                 'Content-Length': responseBody.length,
                 'CRC-32': responseBodyCrc.toString(16),
             });
 
-            // write body
+            // Body
             response.write(responseBody);
             response.end();
-
-            // console.log({ t: Math.floor(Date.now() / 1000) })
-            // If there are no controls/command, just send the timestamp
-            // return response.send({ t: Math.floor(Date.now() / 1000) });
         }
     }
     catch (e) {
@@ -350,7 +346,7 @@ app.get("/api/device/data/:m_guid", downloadLimit, async (request, response) => 
     const m_guid = request.params.m_guid;
     const start = request.query.start;
     const end = request.query.end;
-    console.log("Received a REST data request /api/device/data/" + m_guid + ", Start: " + start + ", End: " + end);
+    console.log("Received a device data request /api/device/data/" + m_guid + ", Start: " + start + ", End: " + end);
 
     const startDate = start ? new Date(parseInt(start * 1000)).toISOString() : null;
     const endDate = end ? new Date(parseInt(end * 1000)).toISOString() : null;
@@ -360,11 +356,11 @@ app.get("/api/device/data/:m_guid", downloadLimit, async (request, response) => 
     if (startDate || endDate) {
         query.timestamp = {};
         if (startDate) {
-            console.log("Start time: " + startDate);
+            console.log("Requested time range of records:\n\tStart time: " + startDate);
             query.timestamp["$gte"] = new Date(startDate);
         }
         if (endDate) {
-            console.log("End time: " + endDate);
+            console.log("\tEnd time: " + endDate);
             query.timestamp["$lte"] = new Date(endDate);
         }
     }
@@ -374,7 +370,7 @@ app.get("/api/device/data/:m_guid", downloadLimit, async (request, response) => 
         // console.dir(query); // See query sent by uncommenting this line, helpful for debugging
         await collection.find(query).sort(sort).toArray(function (error, result) {
             if (error) {
-                return response.status(500).send("API Error: Bad request");
+                return response.status(500).send("API Error:\n\tBad request");
             }
             console.log("Query result size: " + JSON.parse(JSON.stringify(result)).length);
             if (JSON.parse(JSON.stringify(result)).length > 1000) {
