@@ -283,6 +283,7 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
             // write header
             response.writeHead(200, {
                 'Content-Type': 'application/json',
+                'Content-Length': responseBody.length,
                 'CRC-32': responseBodyCrc.toString(16),
             });
 
@@ -300,6 +301,7 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
             // write header
             response.writeHead(200, {
                 'Content-Type': 'application/json',
+                'Content-Length': responseBody.length,
                 'CRC-32': responseBodyCrc.toString(16),
             });
 
