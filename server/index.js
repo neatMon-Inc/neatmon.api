@@ -97,7 +97,6 @@ app.use((req, res, next) => {
                     let now = new Date(); // Get the date/time
                     let m_date = new Date(now.toISOString()); // Convert to ISO format
                     console.log("\ERROR with incoming request:\n\tDate:\t" + m_date + "\n\tFrom:\t" + req.ip + "\n\tGUID:\t" + req.params.p_guid + "\n\tID:\t" + req.body.id);
-                    console.log("\n" + m_date + " - BAD post req from " + req.ip + " || Url: " + req.url);
                     console.error(e);
                     return res.status(400).send({ err: 'Bad request/data' });
                 }
@@ -346,7 +345,7 @@ app.get("/api/device/data/:m_guid", downloadLimit, async (request, response) => 
     const m_guid = request.params.m_guid;
     const start = request.query.start;
     const end = request.query.end;
-    console.log("Received a device data request /api/device/data/" + m_guid + ", Start: " + start + ", End: " + end);
+    console.log("Incoming historical device data request\n\t/api/device/data/" + m_guid + "\n\tStart:\t" + start + "\n\tEnd:\t" + end);
 
     const startDate = start ? new Date(parseInt(start * 1000)).toISOString() : null;
     const endDate = end ? new Date(parseInt(end * 1000)).toISOString() : null;
@@ -356,11 +355,9 @@ app.get("/api/device/data/:m_guid", downloadLimit, async (request, response) => 
     if (startDate || endDate) {
         query.timestamp = {};
         if (startDate) {
-            console.log("Requested time range of records:\n\tStart time: " + startDate);
             query.timestamp["$gte"] = new Date(startDate);
         }
         if (endDate) {
-            console.log("\tEnd time: " + endDate);
             query.timestamp["$lte"] = new Date(endDate);
         }
     }
@@ -379,7 +376,7 @@ app.get("/api/device/data/:m_guid", downloadLimit, async (request, response) => 
             response.send(result);
         });
     } catch (e) {
-        console.error("Error parsing incoming request: ", e);
+        console.error("Error:\tParsing incoming request failed\n", e);
         return response.status(500).send("API Error: Unable to find records in collection");
     }
 });
@@ -401,14 +398,14 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
         }
         
         let range = request.headers.range;
-        console.log("Received a request for file: " + filePath  + ", in range: " + range);
+        console.log("Incoming request for file:\n\tPath:\t" + filePath  + "\n\tRange (bytes):\t" + range + "\n\tFrom:\t" + request.ip);
 
         if (!fileSystem.existsSync(filePath)) {
-            response.status(404).send('File not found');
+            response.status(404).send('ERR: File not found');
             return;
         }
         else if (!range) {
-            response.status(400).send('Missing range');
+            response.status(400).send('ERR: Missing range');
             return;
         }
 
@@ -418,18 +415,18 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
         if (start < 0 || start >= stat.size) {
             // Check to determine if requested starting byte is greater than file size
             // https://www.rfc-editor.org/rfc/rfc7233#section-4.4
-            console.log("Request outside start byte range of file..");
+            console.log("\tWarning: Request outside start byte range of file..");
             return response.status(416).send("Bad request.  Start byte out of range!");
         }
 
         var end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
         if (end >= stat.size) {
-            console.log("Outside end range of filesize.  Adjusting response to available bytes and size.");
+            console.log("\tWarning: Outside end range of filesize.  Adjusting response to available bytes and size.");
             end = stat.size - 1;
         }
         else if (end < 0)
         {
-            console.log("Request outside end byte range of file..");
+            console.log("\tWarning: Request outside end byte range of file..");
             return response.status(416).send("Bad request.  End byte is less than zero!");
         }
 
@@ -459,24 +456,24 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
             });
 
             fileStream2.on('end', function () {
-                console.log('Download completed');
+                console.log('\tSend complete');
                 response.end();
             });
 
             fileStream2.on('error', function (err) {
-                console.log('Error while downloading file:', err);
+                console.log('\tError: Downloading file:', err);
                 response.status(500).send('Error while downloading file');
             });
         });
 
         file.on('error', function (err) {
-            console.log('Error while calculating CRC32:', err);
+            console.log('\tError: Calculating CRC32:', err);
             response.status(500).send('Error while calculating CRC32');
         });
     }
     catch (e) {
         console.log(e);
-        console.log('Bad request.');
+        console.log('File: Bad request.');
         return response.status(400).send("Bad request.");
     }
 })
