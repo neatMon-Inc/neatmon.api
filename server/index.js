@@ -18,6 +18,7 @@ const bull = require('bull');
 const crc32 = require('crc/crc32');
 const rateLimit = require('express-rate-limit');
 const queue = new bull('data-queue', 'redis://redis:6379')
+const sanitize = require("sanitize-filename");
 
 INSIDE_NEATMON = process.env.INSIDE_NEATMON
 console.log(INSIDE_NEATMON)
@@ -397,7 +398,8 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
         // Note: the file path below is internal to the docker container.  
         //  Unless changed, in your docker-compose the local filesystem 
         //  should direct to the folder ../apiFolder should contain the files for this route
-        var filePath = path.resolve(FILE_DIRECTORY, request.params.filename);    
+        var requestPath = sanitize(request.params.filename); // Sanitize input
+        var filePath = path.resolve(FILE_DIRECTORY, requestPath);    
         
         if (!filePath.startsWith(FILE_DIRECTORY)) {
             response.status(403).send('Forbidden');
