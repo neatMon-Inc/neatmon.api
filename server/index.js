@@ -397,7 +397,12 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
         // Note: the file path below is internal to the docker container.  
         //  Unless changed, in your docker-compose the local filesystem 
         //  should direct to the folder ../apiFolder should contain the files for this route
-        var filePath = path.join(FILE_DIRECTORY, request.params.filename);    
+        var filePath = path.resolve(FILE_DIRECTORY, request.params.filename);    
+        
+        if (!filePath.startsWith(FILE_DIRECTORY)) {
+            response.status(403).send('Forbidden');
+            return;
+        }
         
         let range = request.headers.range;
         console.log("Received a request for file: " + filePath  + ", in range: " + range);
