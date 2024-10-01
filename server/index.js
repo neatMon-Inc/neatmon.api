@@ -263,12 +263,12 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
             if (controlList.length > 0) {
                 finalCommand.control = [];
                 controlList.forEach((ctrl) => {
-                    finalCommand.control.id = ctrl._id.slice(-5);
+                    finalCommand.control.id = ctrl._id.toString().slice(-5);
                     finalCommand.control.push(ctrl.control);
                 })
             }
             if (cmd) {
-                finalCommand.id = cmd._id.slice(-5);
+                finalCommand.id = cmd._id.toString().slice(-5);
                 if (cmd.command.fwu)
                     finalCommand.fwu = cmd.command.fwu;
                 if (cmd.command.cfg)
