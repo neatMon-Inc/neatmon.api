@@ -315,16 +315,8 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
     catch (e) {
         console.log('Exception occurred at some point during the request:');
         console.log(e);
-        const responseBody = JSON.stringify({ t: Math.floor(Date.now() / 1000) });
-        const responseBodyCrc = crc32(responseBody).toString(16);
 
-        response.writeHead(200, {
-            'Content-Type': 'application/json',
-            'Content-Length': responseBody.length,
-            'CRC-32': responseBodyCrc.toString(16),
-        });
-
-        return response.send({ t: Math.floor(Date.now() / 1000) });
+        return response.status(500).send({ err: 'Exception created in request' });
     }
 });
 
