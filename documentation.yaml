@@ -24,177 +24,230 @@ servers:
     description: neatMon API production server
 
 paths:
-  /api/device/{p_guid}:
-    post:
-      summary: Handle device data post
-      description: Receives data from devices and processes it, returning relevant control commands if any exist.
-      parameters:
-        - in: path
-          name: p_guid
-          required: true
-          schema:
-            type: string
-          description: GUID of the device
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DeviceData'
-      responses:
-        '200':
-          description: Data processed successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CommandResponse'
-        '500':
-          description: Internal server error
-
-  /api2/device/{p_guid}:
-    post:
-      summary: Handle device data post with CRC
-      description: Receives data from devices, processes it, and returns relevant control commands with CRC if any exist.
-      parameters:
-        - in: path
-          name: p_guid
-          required: true
-          schema:
-            type: string
-          description: GUID of the device
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DeviceData'
-      responses:
-        '200':
-          description: Data processed successfully with CRC
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CommandResponse'
-        '500':
-          description: Internal server error
-
-  /api/status:
-    get:
-      summary: Get the status of the API
-      description: Useful for uptime monitoring of the API by a third party.
-      responses:
-        '200':
-          description: API is working
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: "API Working Mon Aug 29 2024 10:00:00 GMT+0000 (Coordinated Universal Time)"
-
-  /api/status/time:
-    get:
-      summary: Get the current time in timestamp format
-      description: Returns the current server time as a timestamp.
-      responses:
-        '200':
-          description: Current timestamp
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  t:
-                    description: Current time in epoch format
-                    type: integer
-                    example: 1622547802
-
   /api/device/data/{m_guid}:
     get:
-      summary: Get the status of a GUID
-      description: Returns all data for a given GUID starting with the latest.
+      description: 'Returns all data for a given GUID starting with the latest. Note:
+        This endpoint has a rate limit of 500 requests per 15 minutes.'
       parameters:
-        - in: path
-          name: m_guid
-          required: true
-          schema:
-            type: string
-          description: GUID of the device
-        - in: query
-          name: start
-          schema:
-            type: integer
-          description: Start time in Unix timestamp
-        - in: query
-          name: end
-          schema:
-            type: integer
-          description: End time in Unix timestamp
+      - description: GUID of the device
+        in: path
+        name: m_guid
+        required: true
+        schema:
+          type: string
+      - description: Start time in Unix timestamp
+        in: query
+        name: start
+        schema:
+          type: integer
+      - description: End time in Unix timestamp
+        in: query
+        name: end
+        schema:
+          type: integer
       responses:
         '200':
-          description: Data for the given GUID
           content:
             application/json:
               schema:
-                type: array
                 items:
                   type: object
+                type: array
+          description: Data for the given GUID
         '400':
           description: Query results exceed limits
         '500':
           description: Internal server error
-
-  /files/{filename}:
-    get:
-      summary: Get a file from the API server
-      description: Retrieves a file from the server, typically for firmware updates.
+      summary: Get the status of a GUID
+  /api/device/{p_guid}:
+    post:
+      description: 'Receives data from devices, processes it, and returns relevant
+        control commands if any exist. This endpoint spawns a worker to handle background
+        tasks related to data storage, processing, and forwarding. Note: This endpoint
+        has a rate limit of 500 requests per 15 minutes.'
       parameters:
-        - in: path
-          name: filename
-          required: true
-          schema:
-            type: string
-          description: Name of the file
+      - description: GUID of the device
+        in: path
+        name: p_guid
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceData'
+        required: true
       responses:
         '200':
-          description: File retrieved successfully
+          content:
+            application/json:
+              schema:
+                properties:
+                  cmd:
+                    description: Commands to be sent to the device, if any, from controlQueue
+                      and commandQueue.
+                    properties:
+                      cfg:
+                        description: Configuration update command, if available.
+                        type: object
+                      control:
+                        description: List of control commands to be executed on the
+                          device.
+                        items:
+                          type: string
+                        type: array
+                      fwu:
+                        description: Firmware update command, if available.
+                        properties:
+                          crc:
+                            description: CRC-32 checksum for the firmware update file.
+                            type: string
+                          uri:
+                            description: URI for the firmware update file.
+                            type: string
+                        type: object
+                    type: object
+                  t:
+                    description: Current server timestamp in seconds.
+                    type: integer
+                type: object
+          description: Data processed successfully
+        '400':
+          description: Bad request (e.g., invalid JSON or incorrect CRC)
+        '500':
+          description: Internal server error
+      summary: Handle device data post
+  /api/status:
+    get:
+      description: 'Useful for uptime monitoring of the API by a third party. Note:
+        This endpoint has a rate limit of 500 requests per 15 minutes.'
+      responses:
+        '200':
+          content:
+            text/plain:
+              schema:
+                example: API Working Mon Aug 29 2024 10:00:00 GMT+0000 (Coordinated
+                  Universal Time)
+                type: string
+          description: API is working
+      summary: Get the status of the API
+  /api/status/time:
+    get:
+      description: 'Returns the current server time as a timestamp. Note: This endpoint
+        has a rate limit of 500 requests per 15 minutes.'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                properties:
+                  t:
+                    example: 1622547802
+                    type: integer
+                type: object
+          description: Current timestamp
+      summary: Get the current time in timestamp format
+  /files/{filename}:
+    get:
+      description: 'Retrieves a file from the server, typically for firmware updates.
+        Note: This endpoint has a rate limit of 500 requests per 15 minutes.'
+      parameters:
+      - description: Name of the file
+        in: path
+        name: filename
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
           content:
             application/octet-stream:
               schema:
-                type: string
                 format: binary
+                type: string
+          description: File retrieved successfully
+          headers:
+            CRC-32:
+              description: CRC-32 checksum of the response body for data integrity.
+              schema:
+                type: string
+            Content-Length:
+              description: The length of the response body.
+              schema:
+                type: integer
+            Content-Range:
+              description: The range of bytes being served.
+              schema:
+                type: string
+            Content-Type:
+              description: The content type of the response, always `application/octet-stream`.
+              schema:
+                example: application/octet-stream
+                type: string
+        '400':
+          description: Bad request, e.g., missing range header or invalid range.
+        '403':
+          description: Forbidden - the requested file path is outside the allowed
+            directory.
         '404':
-          description: File not found
+          description: File not found.
+        '416':
+          description: Requested range not satisfiable, e.g., start byte is greater
+            than file size.
+        '500':
+          description: Internal server error, e.g., error while downloading file or
+            calculating CRC32.
+      summary: Get a file from the API server
 
 components:
   schemas:
-    DeviceData:
-      type: object
+    CommandResponse:
       properties:
-        id:
+        cmd:
+          description: Commands to be sent to the device, if any, from controlQueue
+            and commandQueue.
+          properties:
+            cfg:
+              description: Configuration update command, if available.
+              type: object
+            control:
+              description: List of control commands to be executed on the device.
+              items:
+                type: string
+              type: array
+            fwu:
+              description: Firmware update command, if available.
+              properties:
+                crc:
+                  description: CRC-32 checksum for the firmware update file.
+                  type: string
+                uri:
+                  description: URI for the firmware update file.
+                  type: string
+              type: object
+          type: object
+        t:
+          description: Current server timestamp in seconds.
+          type: integer
+      type: object
+    DeviceData:
+      properties:
+        fw:
           type: string
         hw:
           type: string
-        fw:
+        id:
           type: string
         pn:
           type: string
         v:
-          type: object
           additionalProperties:
-            type: object
             properties:
-              ts:
-                description: Current time in epoch format
-                type: integer
               data:
                 type: number
-
-    CommandResponse:
-      type: object
-      properties:
-        t:
-          description: Current time in epoch format
-          type: integer
-        cmd:
+              ts:
+                type: integer
+            type: object
           type: object
-          description: Commands to be sent to the device, if any.
+      type: object
