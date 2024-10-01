@@ -263,10 +263,12 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
             if (controlList.length > 0) {
                 finalCommand.control = [];
                 controlList.forEach((ctrl) => {
+                    finalCommand.control.id = ctrl._id.slice(-5);
                     finalCommand.control.push(ctrl.control);
                 })
             }
             if (cmd) {
+                finalCommand.id = cmd._id.slice(-5);
                 if (cmd.command.fwu)
                     finalCommand.fwu = cmd.command.fwu;
                 if (cmd.command.cfg)
@@ -313,6 +315,15 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
     catch (e) {
         console.log('Exception occurred at some point during the request:');
         console.log(e);
+        const responseBody = JSON.stringify({ t: Math.floor(Date.now() / 1000) });
+        const responseBodyCrc = crc32(responseBody).toString(16);
+
+        response.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Content-Length': responseBody.length,
+            'CRC-32': responseBodyCrc.toString(16),
+        });
+
         return response.send({ t: Math.floor(Date.now() / 1000) });
     }
 });
