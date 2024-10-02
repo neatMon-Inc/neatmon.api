@@ -24,7 +24,7 @@ servers:
     description: neatMon API production server
 
 paths:
-  /api/device/data/{m_guid}:
+  /api/device/data/{p_guid}:
     get:
       description: 'Returns all data for a given GUID starting with the latest. Note:
         This endpoint has a rate limit of 500 requests per 15 minutes.'
