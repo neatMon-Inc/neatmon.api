@@ -31,7 +31,7 @@ paths:
       parameters:
       - description: GUID of the device
         in: path
-        name: m_guid
+        name: p_guid
         required: true
         schema:
           type: string
@@ -205,8 +205,8 @@ components:
     CommandResponse:
       properties:
         cmd:
-          description: Commands to be sent to the device, if any, from controlQueue
-            and commandQueue.
+          description: Commands to be sent to the device, if any, from the controlQueue
+            and commandQueue collections in MongoDB
           properties:
             cfg:
               description: Configuration update command, if available.
@@ -228,19 +228,23 @@ components:
               type: object
           type: object
         t:
-          description: Current server timestamp in seconds.
+          description: Current server timestamp in epoch
           type: integer
       type: object
     DeviceData:
       properties:
         fw:
           type: string
+          description: Current firmware on Automated Monitoring Node
         hw:
           type: string
+          description: Hardware revision
         id:
           type: string
+          description: Short GUID, consisting of last 5 of full GUID
         pn:
           type: string
+          description: Model/Part number
         v:
           additionalProperties:
             properties:
@@ -248,6 +252,7 @@ components:
                 type: number
               ts:
                 type: integer
+                description: Timestamp in epoch
             type: object
           type: object
       type: object
