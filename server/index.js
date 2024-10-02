@@ -345,8 +345,8 @@ app.get("/api/status/time", downloadLimit, async (request, response) => {
 ** Get the status of a GUID passed as parameter
 ** Returns all data for a given GUID starting with the latest
 */
-app.get("/api/device/data/:m_guid", downloadLimit, async (request, response) => {
-    const m_guid = request.params.m_guid;
+app.get("/api/device/data/:p_guid", downloadLimit, async (request, response) => {
+    const m_guid = request.params.p_guid;
     const start = request.query.start;
     const end = request.query.end;
     console.log("Incoming historical device data request\n\t/api/device/data/" + m_guid + "\n\tStart:\t" + start + "\n\tEnd:\t" + end);
