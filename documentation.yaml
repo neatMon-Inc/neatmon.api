@@ -225,12 +225,10 @@ components:
               type: object
               description: Firmware update command, if available.
               properties:
-                crc:
-                  description: CRC-32 checksum for the firmware update file.
-                  type: string
                 uri:
                   description: URI for the firmware update file.
                   type: string
+      required: ["t"]
     DeviceData:
       type: object
       properties:
@@ -251,7 +249,7 @@ components:
             description: An array of sensor readings.
             items:
               type: object
-              description: A single sensor reading, including a required timestamp (`ts`) and optional sensor values.
+              description: A single, or list of sensor reading(s), including a required timestamp (`ts`) and optional sensor values.
               properties:
                 ts:
                   type: integer
