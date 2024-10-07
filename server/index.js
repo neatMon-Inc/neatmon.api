@@ -171,7 +171,11 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         let now = new Date(); // Get the date/time
         let m_date = new Date(now.toISOString()); // Convert to ISO format
 
-        console.log("\nIncoming request:\n\tDate:\t" + m_date + "\n\tFrom:\t" + request.ip + "\n\tGUID:\t" + request.params.p_guid + "\n\tID:\t" + request.body.id);
+        console.log("\nIncoming request:");
+        console.log("\tDate:\t" + m_date);
+        console.log("\tFrom:\t" + request.ip);
+        console.log("\tGUID:\t" + request.params.p_guid);
+        console.log("\tID:\t" + request.body.id);
 
         // Record the incoming request to the requests cache
         await database.collection('deviceApiRequestsCache').insertOne({
@@ -217,9 +221,9 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         else
         {
             incomingCRC = incomingCRC.toLowerCase();
-            console.log("\tProvided:\t" + incomingCRC);
+            console.log("\tProvided:\t0x" + incomingCRC);
             const calculatedIncomingCRC = crc32(JSON.stringify(request.body)).toString(16);
-            console.log("\tCalculated:\t" + calculatedIncomingCRC);
+            console.log("\tCalculated:\t0x" + calculatedIncomingCRC);
             if (incomingCRC != calculatedIncomingCRC)
             {
                 console.log("\tCRC-32:\tERR");
@@ -252,6 +256,63 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
             console.log(`Error:\n\tDevice with GUID ${doc.guid} does not exist, data will not be inserted`);
         }
 
+        // Check for control request responses
+        const controlsExecuted = request.body.ctrl;
+        // Set timestamp executed for each control in the controlQueue
+        // Adding a timestamp prevents the control from being being sent again
+        if (controlsExecuted) {
+            console.log("Control Record(s): ");
+            controlsExecuted.forEach((ctrlResp) => {
+                // Get data to update database
+                const controlShortId = ctrlResp.id;                 // last 5 digits of the event id for object
+                const controlDate= new Date (ctrlResp.ts * 1000);   // timestamp of when the control was set
+                const controlStat = ctrlResp.stat;                  // acknowledgement of the control
+
+                console.log("\tShort Object ID " + controlShortId);
+                console.log("\t\tDate    \t" + controlDate);
+                console.log("\t\tStatus  \t" + controlStat);
+
+                // Search for the control object in the database for record with matching short id and guid
+                console.log("Searching for data base record with short id " + controlShortId + " and guid " + doc.guid);
+                database.collection('controlQueue').updateOne({
+                    short_id: controlShortId,
+                    guid: doc.guid
+                }, {
+                    $set: {
+                        executed: controlDate,
+                        stat: controlStat
+                    }
+                });
+            });
+        }
+
+        // Check for command request responses
+        const commandExecuted = request.body.cfg;
+        // Set timestamp executed for each command in the commandQueue
+        // Adding a timestamp prevents the command from being being sent again
+        if (commandExecuted) {
+            console.log("Command Record(s): ");
+            const commandShortId = commandExecuted.id;                 // last 5 digits of the event id for object
+            const commandDate= new Date (commandExecuted.ts * 1000);   // timestamp of when the command was set
+            const commandStat = commandExecuted.stat;                  // acknowledgement of the command
+
+            console.log("\tShort Object ID " + commandShortId);
+            console.log("\t\tDate    \t" + commandDate);
+            console.log("\t\tStatus  \t" + commandStat);
+
+            // Search for the command object in the database for record with matching short id and guid
+            console.log("Searching for data base record with short id " + commandShortId + " and guid " + doc.guid);
+            database.collection('commandQueue').updateOne({
+                short_id: commandShortId,
+                guid: doc.guid
+            }, {
+                $set: {
+                    executed: commandDate,
+                    stat: commandStat
+                }
+            });
+        }
+
         // Grab any controls that are available for device that have not been executed yet
         const controlList = await database.collection('controlQueue').find({ guid: doc.guid, executed: "" }).toArray();
         // Grab a command that needs to be executed on the device
@@ -261,17 +322,17 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         if (controlList.length > 0 || cmd) {
             let finalCommand = {}
             if (controlList.length > 0) {
+                // create json object with array of controls
                 finalCommand.control = [];
                 controlList.forEach((ctrl) => {
-                    finalCommand.control.id = ctrl._id.toString().slice(-5);
-                    finalCommand.control.push(ctrl.control);
+                    finalCommand.control.push({ id: ctrl.short_id, ...ctrl.control });
                 })
             }
             if (cmd) {
-                finalCommand.id = cmd._id.toString().slice(-5);
-                if (cmd.command.fwu)
+                finalCommand.id = cmd.short_id;
+                if (Object.keys(cmd.command.fwu).length > 0)
                     finalCommand.fwu = cmd.command.fwu;
-                if (cmd.command.cfg)
+                if (Object.keys(cmd.command.cfg).length > 0)
                     finalCommand.cfg = cmd.command.cfg;
             }
 
