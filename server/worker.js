@@ -74,68 +74,70 @@ queue.process(async (job, done) => {
         }
 
         // NOTE: Currently unknown if this is better in the post funciton or in this worker
-        // // START CONTROL/CONFIG COLLECTIONS UPDATE
-        // // Check for control request responses
-        // const controlsExecuted = body.ctrl;
-        // // Set timestamp executed for each control in the controlQueue
-        // // Adding a timestamp prevents the control from being being sent again
-        // if (controlsExecuted && Object.keys(controlsExecuted).length > 0) {
-        //     // if (body.cmd.stat > 0) { // TODO: Double check if this is not nexted in each control object
-        //         console.log("Control Record(s): ");
-        //         controlsExecuted.forEach((ctrlResp) => {
-        //             // Get data to update database
-        //             const controlShortId = ctrlResp.id;                 // last 5 digits of the event id for object
-        //             const controlDate= new Date (ctrlResp.ts * 1000);   // timestamp of when the control was set
-        //             const controlStat = ctrlResp.stat;                  // acknowledgement of the control
+        // START CONTROL/CONFIG COLLECTIONS UPDATE
+        // Check for control request responses
+        const controlsExecuted = body.ctrl;
+        // Set timestamp executed for each control in the controlQueue
+        // Adding a timestamp prevents the control from being being sent again
+        if (controlsExecuted && Object.keys(controlsExecuted).length > 0) {
+            // if (body.cmd.stat > 0) { // TODO: Double check if this is not needed in each control object
+                console.log("Control Record(s): ");
+                controlsExecuted.forEach((ctrlResp) => {
+                    // Get data to update database
+                    const controlShortId = ctrlResp.id;                 // last 5 digits of the event id for object
+                    const controlDate= new Date (ctrlResp.ts * 1000);   // timestamp of when the control was set
+                    const controlStat = ctrlResp.stat;                  // acknowledgement of the control
 
-        //             console.log("\tShort Object ID " + controlShortId);
-        //             console.log("\t\tDate    \t" + controlDate);
-        //             console.log("\t\tStatus  \t" + controlStat);
+                    console.log("\tShort Object ID " + controlShortId);
+                    console.log("\t\tDate    \t" + controlDate);
+                    console.log("\t\tStatus  \t" + controlStat);
 
-        //             // Search for the control object in the database for record with matching short id and guid
-        //             console.log("Searching for data base record with short id " + controlShortId + " and guid " + job.data.guid);
-        //             database.collection('controlQueue').updateOne({
-        //                 short_id: controlShortId,
-        //                 guid: job.data.guid
-        //             }, {
-        //                 $set: {
-        //                     // executed: controlDate,
-        //                     stat: controlStat
-        //                 }
-        //             });
-        //         });
-        //     // }
-        // }
+                    // Search for the control object in the database for record with matching short id and guid
+                    console.log("Searching for data base record with short id " + controlShortId + " and guid " + job.data.guid);
+                    database.collection('controlQueue').updateOne({
+                        short_id: controlShortId,
+                        guid: job.data.guid
+                    }, {
+                        $set: {
+                            executed: controlDate,
+                            stat: controlStat
+                        }
+                    });
+                });
+            // }
+            console.log("Updated controls collection document")
+        }
 
-        // // Check for command request responses
-        // const commandExecuted = body.cfg;
-        // // Set timestamp executed for each command in the commandQueue
-        // // Adding a timestamp prevents the command from being being sent again
-        // if (commandExecuted && Object.keys(commandExecuted).length > 0) {
-        //     if (body.cfg.stat > 0) {
-        //         console.log("Command Record(s): ");
-        //         const commandShortId = commandExecuted.id;                 // last 5 digits of the event id for object
-        //         const commandDate= new Date (commandExecuted.ts * 1000);   // timestamp of when the command was set
-        //         const commandStat = commandExecuted.stat;                  // acknowledgement of the command
+        // Check for command request responses
+        const commandExecuted = body.cfg;
+        // Set timestamp executed for each command in the commandQueue
+        // Adding a timestamp prevents the command from being being sent again
+        if (commandExecuted && Object.keys(commandExecuted).length > 0) {
+            if (body.cfg.stat > 0) {
+                console.log("Command Record(s): ");
+                const commandShortId = commandExecuted.id;                 // last 5 digits of the event id for object
+                const commandDate= new Date (commandExecuted.ts * 1000);   // timestamp of when the command was set
+                const commandStat = commandExecuted.stat;                  // acknowledgement of the command
 
-        //         console.log("\tShort Object ID " + commandShortId);
-        //         console.log("\t\tDate    \t" + commandDate);
-        //         console.log("\t\tStatus  \t" + commandStat);
+                console.log("\tShort Object ID " + commandShortId);
+                console.log("\t\tDate    \t" + commandDate);
+                console.log("\t\tStatus  \t" + commandStat);
 
-        //         // Search for the command object in the database for record with matching short id and guid
-        //         console.log("Searching for data base record with short id " + commandShortId + " and guid " + job.data.guid);
-        //         database.collection('commandQueue').updateOne({
-        //             short_id: commandShortId,
-        //             guid: job.data.guid
-        //         }, {
-        //             $set: {
-        //                 executed: commandDate,
-        //                 stat: commandStat
-        //             }
-        //         });
-        //     }
-        // }
-        // // END CONTROL/CONFIG COLLECTIONS UPDATE 
+                // Search for the command object in the database for record with matching short id and guid
+                console.log("Searching for data base record with short id " + commandShortId + " and guid " + job.data.guid);
+                database.collection('commandQueue').updateOne({
+                    short_id: commandShortId,
+                    guid: job.data.guid
+                }, {
+                    $set: {
+                        executed: commandDate,
+                        stat: commandStat
+                    }
+                });
+            }
+            console.log("Updated config command collection document")
+        }
+        // END CONTROL/CONFIG COLLECTIONS UPDATE 
         
         console.log(job.data)
         Object.keys(job.data.v).forEach((sensor) => {
