@@ -40,12 +40,14 @@ queue.process(async (job, done) => {
     const metadataSet = new Set()
     try {
         console.log("Worker Started Job")
+        console.log(job.data)
         const timestamps = []
         let docArray = [];
         let locationUpdate = ''
         let fw = job.data.fw
         let hw = job.data.hw
         let pn = job.data.pn
+        let body = job.data.body
         let length = job.data.length
         let now = job.data.now
 
@@ -70,6 +72,70 @@ queue.process(async (job, done) => {
                 alias: [''],
             }))
         }
+
+        // NOTE: Currently unknown if this is better in the post funciton or in this worker
+        // // START CONTROL/CONFIG COLLECTIONS UPDATE
+        // // Check for control request responses
+        // const controlsExecuted = body.ctrl;
+        // // Set timestamp executed for each control in the controlQueue
+        // // Adding a timestamp prevents the control from being being sent again
+        // if (controlsExecuted && Object.keys(controlsExecuted).length > 0) {
+        //     // if (body.cmd.stat > 0) { // TODO: Double check if this is not nexted in each control object
+        //         console.log("Control Record(s): ");
+        //         controlsExecuted.forEach((ctrlResp) => {
+        //             // Get data to update database
+        //             const controlShortId = ctrlResp.id;                 // last 5 digits of the event id for object
+        //             const controlDate= new Date (ctrlResp.ts * 1000);   // timestamp of when the control was set
+        //             const controlStat = ctrlResp.stat;                  // acknowledgement of the control
+
+        //             console.log("\tShort Object ID " + controlShortId);
+        //             console.log("\t\tDate    \t" + controlDate);
+        //             console.log("\t\tStatus  \t" + controlStat);
+
+        //             // Search for the control object in the database for record with matching short id and guid
+        //             console.log("Searching for data base record with short id " + controlShortId + " and guid " + job.data.guid);
+        //             database.collection('controlQueue').updateOne({
+        //                 short_id: controlShortId,
+        //                 guid: job.data.guid
+        //             }, {
+        //                 $set: {
+        //                     // executed: controlDate,
+        //                     stat: controlStat
+        //                 }
+        //             });
+        //         });
+        //     // }
+        // }
+
+        // // Check for command request responses
+        // const commandExecuted = body.cfg;
+        // // Set timestamp executed for each command in the commandQueue
+        // // Adding a timestamp prevents the command from being being sent again
+        // if (commandExecuted && Object.keys(commandExecuted).length > 0) {
+        //     if (body.cfg.stat > 0) {
+        //         console.log("Command Record(s): ");
+        //         const commandShortId = commandExecuted.id;                 // last 5 digits of the event id for object
+        //         const commandDate= new Date (commandExecuted.ts * 1000);   // timestamp of when the command was set
+        //         const commandStat = commandExecuted.stat;                  // acknowledgement of the command
+
+        //         console.log("\tShort Object ID " + commandShortId);
+        //         console.log("\t\tDate    \t" + commandDate);
+        //         console.log("\t\tStatus  \t" + commandStat);
+
+        //         // Search for the command object in the database for record with matching short id and guid
+        //         console.log("Searching for data base record with short id " + commandShortId + " and guid " + job.data.guid);
+        //         database.collection('commandQueue').updateOne({
+        //             short_id: commandShortId,
+        //             guid: job.data.guid
+        //         }, {
+        //             $set: {
+        //                 executed: commandDate,
+        //                 stat: commandStat
+        //             }
+        //         });
+        //     }
+        // }
+        // // END CONTROL/CONFIG COLLECTIONS UPDATE 
         
         console.log(job.data)
         Object.keys(job.data.v).forEach((sensor) => {
@@ -201,7 +267,6 @@ queue.process(async (job, done) => {
                         console.log('Organization\'s forwarding address: ' + newAddress)
 
                         try{
-        
                             let res = null;
             
                             if (organization.secretKey !== null && organization.secretKey !== undefined && organization.secretKey !== 'None' && organization.secretKey !== 'undefined' && organization.secretKey !== '') {
@@ -290,14 +355,35 @@ queue.process(async (job, done) => {
             if (pn)
                 systemData.pn = pn
 
+            console.log('Updating document with: ', systemData)
+
             const results = await database.collection('devices').updateOne({'serial': job.data.guid}, {
-                $set: systemData
+                $set: systemData,
             })
             console.log(results)
             console.log('Updates to device system information', systemData)
         }
 
-        // //This block of code filters out duplicate data
+        if (body.cfg) {
+            // Add the configuration to the device's configuration array
+            let deviceConfigObject = {}
+            deviceConfigObject.date = new Date(now)
+            deviceConfigObject.config = {}
+            deviceConfigObject.config.network       = body.cfg.net
+            deviceConfigObject.config.modem         = body.cfg.mod
+            deviceConfigObject.config.general       = body.cfg.gen
+            deviceConfigObject.config.numSensors    = body.cfg.numSens
+            deviceConfigObject.config.sensors       = body.cfg.sens
+
+            const results = await database.collection('devices').updateOne({'serial': job.data.guid}, {
+                $push: {deviceConfigs: deviceConfigObject}
+            })
+
+            console.log(results)
+            console.log('Updates to device configuration information', deviceConfigObject)
+        }
+
+        // This block of code filters out duplicate data
         const promises = docArray.map(async(doc) => {
             const check = await collection.findOne({
                 'metadata.guid': doc.metadata.guid,

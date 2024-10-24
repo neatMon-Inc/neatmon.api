@@ -243,6 +243,8 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
             "fw": m_fw_id,
             "pn": m_pn_id,
             "d": m_date,
+            "cfg": request.body.cfg,
+            "s": request.body.s,
             "v": request.body.v,
             "body": request.body,
             "length": length,
@@ -260,7 +262,7 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         const controlsExecuted = request.body.ctrl;
         // Set timestamp executed for each control in the controlQueue
         // Adding a timestamp prevents the control from being being sent again
-        if (controlsExecuted) {
+        if (controlsExecuted && Object.keys(controlsExecuted).length > 0) {
             console.log("Control Record(s): ");
             controlsExecuted.forEach((ctrlResp) => {
                 // Get data to update database
@@ -279,7 +281,7 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
                     guid: doc.guid
                 }, {
                     $set: {
-                        executed: controlDate,
+                        // executed: controlDate,
                         stat: controlStat
                     }
                 });
@@ -328,12 +330,15 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
                     finalCommand.control.push({ id: ctrl.short_id, ...ctrl.control });
                 })
             }
+            console.log("\tCommand:\t" + JSON.stringify(cmd));
             if (cmd) {
                 finalCommand.id = cmd.short_id;
-                if (Object.keys(cmd.command.fwu).length > 0)
+                if (cmd.command.fwu && Object.keys(cmd.command.fwu).length > 0)
                     finalCommand.fwu = cmd.command.fwu;
-                if (Object.keys(cmd.command.cfg).length > 0)
+                if (cmd.command.cfg && Object.keys(cmd.command.cfg).length > 0)
                     finalCommand.cfg = cmd.command.cfg;
+
+            console.log("\tFinal Command:\t" + JSON.stringify(finalCommand));
             }
 
             // construct the response
