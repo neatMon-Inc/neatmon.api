@@ -258,61 +258,97 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
             console.log(`Error:\n\tDevice with GUID ${doc.guid} does not exist, data will not be inserted`);
         }
 
-        // Check for control request responses
+        // Check for control request responses before sending a response
         const controlsExecuted = request.body.ctrl;
-        // Set timestamp executed for each control in the controlQueue
-        // Adding a timestamp prevents the control from being being sent again
+
+        // Update controlQueue documents by setting the executed field with a timestamp and setting the status field
+        // Adding a timestamp to the executed field prevents the control from being sent again
         if (controlsExecuted && Object.keys(controlsExecuted).length > 0) {
             console.log("Control Record(s): ");
+            
+            // Loop through each control response object
             controlsExecuted.forEach((ctrlResp) => {
-                // Get data to update database
-                const controlShortId = ctrlResp.id;                 // last 5 digits of the event id for object
-                const controlDate= new Date (ctrlResp.ts * 1000);   // timestamp of when the control was set
-                const controlStat = ctrlResp.stat;                  // acknowledgement of the control
+                const controlShortId = ctrlResp.id;  // Use the short_id to identify the controlQueue document
+                
+                // Proceed only if a valid controlShortId exists
+                if (!controlShortId) {
+                    const controlDate = new Date(ctrlResp.ts * 1000);
+                    const controlStat = ctrlResp.stat;  // Get the status of the control acknowledgment
 
-                console.log("\tShort Object ID " + controlShortId);
-                console.log("\t\tDate    \t" + controlDate);
-                console.log("\t\tStatus  \t" + controlStat);
+                    console.log("\tShort Object ID " + controlShortId);
+                    console.log("\t\tDate    \t" + controlDate);
+                    console.log("\t\tStatus  \t" + controlStat);
 
-                // Search for the control object in the database for record with matching short id and guid
-                console.log("Searching for data base record with short id " + controlShortId + " and guid " + doc.guid);
-                database.collection('controlQueue').updateOne({
-                    short_id: controlShortId,
-                    guid: doc.guid
-                }, {
-                    $set: {
-                        executed: controlDate,
-                        stat: controlStat
+                    // Update the controlQueue record by setting the executed timestamp and status
+                    const updateResult = database.collection('controlQueue').updateOne({
+                        short_id: controlShortId,
+                        guid: doc.guid
+                    }, {
+                        $set: {
+                            executed: controlDate,  // Set executed timestampt to prevent re-sending
+                            stat: controlStat       // Update control status
+                        }
+                    });
+
+                    // If no matching document is found, log a warning message
+                    if (updateResult.modifiedCount === 0) {
+                        console.log("Control document not found in controlQueue");
                     }
-                });
+                    else {
+                        console.log("\tControl document updated in controlQueue");
+                    }
+                }
+                else {
+                    console.log("Warning: Received control without a short_id");
+                }
             });
         }
 
-        // Check for command request responses
+        // Check for command request responses in the incoming request body
         const commandExecuted = request.body.cfg;
-        // Set timestamp executed for each command in the commandQueue
-        // Adding a timestamp prevents the command from being being sent again
-        if (commandExecuted) {
-            console.log("Command Record(s): ");
-            const commandShortId = commandExecuted.id;                 // last 5 digits of the event id for object
-            const commandDate= new Date (commandExecuted.ts * 1000);   // timestamp of when the command was set
-            const commandStat = commandExecuted.stat;                  // acknowledgement of the command
 
-            console.log("\tShort Object ID " + commandShortId);
-            console.log("\t\tDate    \t" + commandDate);
-            console.log("\t\tStatus  \t" + commandStat);
+        // If there are executed commands, update their executed field with a timestamp in the commandQueue
+        // Adding a timestamp to the executed field prevents the command from being sent again
+        if (commandExecuted && Object.keys(commandExecuted).length > 0) {
+            
+            // Use the short_id to identify the commandQueue document
+            const commandShortId = commandExecuted.id;  // last 5 digits of the event ID for identification
+            
+            // Proceed only if a valid commandShortId exists
+            if (!commandShortId) {
+                const commandDate = new Date(commandExecuted.ts * 1000);
+                const commandStat = commandExecuted.stat;  // Get the status of the command acknowledgment
 
-            // Search for the command object in the database for record with matching short id and guid
-            console.log("Searching for data base record with short id " + commandShortId + " and guid " + doc.guid);
-            database.collection('commandQueue').updateOne({
-                short_id: commandShortId,
-                guid: doc.guid
-            }, {
-                $set: {
-                    executed: commandDate,
-                    stat: commandStat
+                console.log("Command Record(s): ");
+                console.log("\tShort Object ID " + commandShortId);
+                console.log("\t\tDate    \t" + commandDate);
+                console.log("\t\tStatus  \t" + commandStat);
+
+                // Search for the matching command document in the database by short ID and GUID
+                console.log("Searching for database record with short ID " + commandShortId + " and GUID " + doc.guid);
+                
+                // Update the commandQueue record by setting the executed timestamp and status
+                const updateResult = database.collection('commandQueue').updateOne({
+                    short_id: commandShortId,
+                    guid: doc.guid
+                }, {
+                    $set: {
+                        executed: commandDate,  // Set executed timestamp to prevent re-sending
+                        stat: commandStat       // Update command status
+                    }
+                });
+
+                // If no matching document is found, log a warning message
+                if (updateResult.modifiedCount != 0) {
+                    console.log("\tCommand document updated in commandQueue");
                 }
-            });
+                else {
+                    console.log("\tCommand document not found in commandQueue");
+                }
+            }
+            else {
+                console.log("Warning: Received command without a short_id");
+            }
         }
 
         // Grab any controls that are available for device that have not been executed yet
@@ -327,11 +363,23 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
                 // create json object with array of controls
                 finalCommand.control = [];
                 controlList.forEach((ctrl) => {
+                    const shortId = ctrl.short_id;
+                    if (!shortId) {
+                        console.log("Warning: Control does not have a short_id");
+                        database.collection('controlQueue').updateOne({ _id: ctrl._id }, { $set: { short_id: ctrl._id.toString().slice(-5) } });
+                    }
+
                     finalCommand.control.push({ id: ctrl.short_id, ...ctrl.control });
                 })
             }
             console.log("\tCommand:\t" + JSON.stringify(cmd));
             if (cmd) {
+                const shortId = cmd.short_id;
+                if (!shortId) {
+                    console.log("Warning: Command does not have a short_id");
+                    database.collection('commandQueue').updateOne({ _id: cmd._id }, { $set: { short_id: cmd._id.toString().slice(-5) } });
+                }
+
                 finalCommand.id = cmd.short_id;
                 if (cmd.command.fwu && Object.keys(cmd.command.fwu).length > 0)
                     finalCommand.fwu = cmd.command.fwu;
