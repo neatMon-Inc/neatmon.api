@@ -449,7 +449,7 @@ app.get("/api/status", downloadLimit, async (request, response) => {
 */
 app.get("/api/status/time", downloadLimit, async (request, response) => {
     let res = {
-        "t": Date.now()
+        "t": Date.now() / 1000
     }
     response.send(res);
 });
