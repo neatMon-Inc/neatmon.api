@@ -70,7 +70,7 @@ app.use((req, res, next) => {
     if (req.body) {
         if (typeof req.body == 'string') {
             if (req.body.includes('"pn":"\\x')) {
-                console.log('Warning: bad "pn" key detected from request body. These are currently causing issues, so removing key and value...')
+                console.log('Warning: Bad "pn" key detected from request body.  NOTE: configuration of node needed!')
                 var startIndex = req.body.indexOf('"pn":"\\x')
                 var endIndex = startIndex + 1
                 var numQuotationMarks = 0;
@@ -170,6 +170,8 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         //   too.
         let now = new Date(); // Get the date/time
         let m_date = new Date(now.toISOString()); // Convert to ISO format
+
+        request.params.p_guid = sanitizeGuid(request.params.p_guid); // Sanitize incoming GUID
 
         console.log("\nIncoming request:");
         console.log("\tDate:\t" + m_date);
@@ -601,3 +603,7 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
         return response.status(400).send("Bad request.");
     }
 })
+
+function sanitizeGuid(p_guid) {
+    return p_guid.replace(/[^a-z0-9-]/gi, ''); // Keeps letters, numbers, and dashes
+}

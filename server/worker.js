@@ -136,10 +136,10 @@ queue.process(async (job, done) => {
         //     }
         // }
         // END CONTROL/CONFIG COLLECTIONS UPDATE 
-        
+
         console.log(job.data)
         Object.keys(job.data.v).forEach((sensor) => {
-            if(sensor === 'sys'){
+            if (sensor === 'sys') {
                 job.data.v[sensor].forEach((entry) => {
                     const timestamp = entry.ts
                     timestamps.push(new Date(timestamp))
@@ -193,13 +193,13 @@ queue.process(async (job, done) => {
                         }
                     }
                 })
-            }else{
+            } else {
                 job.data.v[sensor].forEach((entry) => {
                     const timestamp = entry.ts
                     timestamps.push(new Date(timestamp))
                     Object.keys(entry).forEach((type) => {
-                        if(type !== 'ts'){
-                            if(typeof entry[type] === 'object' && entry[type] !== null){
+                        if (type !== 'ts') {
+                            if (typeof entry[type] === 'object' && entry[type] !== null) {
                                 entry[type].forEach((dataPoint, index) => {
                                     const id = new ObjectId()
                                     docArray.push({
@@ -222,7 +222,7 @@ queue.process(async (job, done) => {
                                         alias: Array(entry[type].length).fill(""),
                                     }))
                                 }
-                            }else{
+                            } else {
                                 metadataSet.add(JSON.stringify({
                                     guid: job.data.guid,
                                     sensor: sensor,
@@ -248,13 +248,13 @@ queue.process(async (job, done) => {
                     })
                 })
             }
-        })       
+        })
 
         // START DATA FORWARDING CODE
         console.log('Checking to see if data should be forwarded...')
-        let device = await database.collection('devices').findOne({"serial": job.data.guid})
+        let device = await database.collection('devices').findOne({ "serial": job.data.guid })
         if (device) {
-            let organization = await database.collection('organizations').findOne({ "name": device.organizationName})
+            let organization = await database.collection('organizations').findOne({ "name": device.organizationName })
             if (organization) {
                 if (organization.webService !== 'None') {
                     console.log('Data needs to be forwarded.')
@@ -266,12 +266,12 @@ queue.process(async (job, done) => {
                         }
                         console.log('Organization\'s forwarding address: ' + newAddress)
 
-                        try{
+                        try {
                             let res = null;
-            
+
                             if (organization.secretKey !== null && organization.secretKey !== undefined && organization.secretKey !== 'None' && organization.secretKey !== 'undefined' && organization.secretKey !== '') {
                                 console.log('Secret key: ' + organization.secretKey)
-                                console.log('Forwarding data...') 
+                                console.log('Forwarding data...')
                                 res = await axios.post(newAddress, JSON.stringify(job.data.body), {
                                     "x-api-key": organization.secretKey,
                                     'Content-Type': 'application/json'
@@ -279,14 +279,14 @@ queue.process(async (job, done) => {
                             }
                             else {
                                 console.log('No secret key found. Proceeding without it.')
-                                console.log('Forwarding data...') 
+                                console.log('Forwarding data...')
                                 res = await axios.post(newAddress, JSON.stringify(job.data.body), {
                                     headers: {
                                         'Content-Type': 'application/json'
                                     }
                                 })
                             }
-                            
+
                             let data = res.data;
                             if (res.status != 200) {
                                 console.error('Forwarding failed.')
@@ -295,8 +295,8 @@ queue.process(async (job, done) => {
                                 console.log('Forwarding successful!')
                             }
                             console.log('DATA')
-                            console.log(data);       
-                        } catch(e){
+                            console.log(data);
+                        } catch (e) {
                             console.log('Something went wrong when forwarding to webhook')
                             console.log(e)
                         }
@@ -304,7 +304,7 @@ queue.process(async (job, done) => {
                     else {
                         console.log('No forwarding address found. Continuing...')
                     }
-                    
+
                 }
                 else {
                     console.log('Data does not need to be forwarded. Continuing...')
@@ -323,24 +323,24 @@ queue.process(async (job, done) => {
 
         const sensorArray = []
         // console.log('metadata set', metadataSet)
-        const currSensors = await database.collection('sensors').find({guid: job.data.guid}).toArray()
-        metadataSet.forEach( (metadata) => {
+        const currSensors = await database.collection('sensors').find({ guid: job.data.guid }).toArray()
+        metadataSet.forEach((metadata) => {
             const parsedData = JSON.parse(metadata)
             const dupeCheck = currSensors.findIndex((s) => {
                 return s.guid === parsedData.guid && s.sensor === parsedData.sensor && s.node === parsedData.node
             })
             //console.log(dupeCheck)
-            if(dupeCheck === -1) {
+            if (dupeCheck === -1) {
                 sensorArray.push(parsedData)
             }
         })
-        if(sensorArray.length > 0) {
+        if (sensorArray.length > 0) {
             console.log('New sensor(s) to add', sensorArray)
             await database.collection('sensors').insertMany(sensorArray)
         }
         if (locationUpdate != '') {
             const location = JSON.parse(locationUpdate)
-            const results = await database.collection('devices').updateOne({'serial': job.data.guid}, {
+            const results = await database.collection('devices').updateOne({ 'serial': job.data.guid }, {
                 $set: location
             })
             console.log(results)
@@ -348,7 +348,7 @@ queue.process(async (job, done) => {
         }
         if (fw || hw || pn) {
             let systemData = {}
-            if (fw) 
+            if (fw)
                 systemData.fw = fw
             if (hw)
                 systemData.hw = hw
@@ -357,7 +357,7 @@ queue.process(async (job, done) => {
 
             console.log('Updating document with: ', systemData)
 
-            const results = await database.collection('devices').updateOne({'serial': job.data.guid}, {
+            const results = await database.collection('devices').updateOne({ 'serial': job.data.guid }, {
                 $set: systemData,
             })
             console.log(results)
@@ -369,14 +369,14 @@ queue.process(async (job, done) => {
             let deviceConfigObject = {}
             deviceConfigObject.date = new Date(now)
             deviceConfigObject.config = {}
-            deviceConfigObject.config.network       = body.cfg.net
-            deviceConfigObject.config.modem         = body.cfg.mod
-            deviceConfigObject.config.general       = body.cfg.gen
-            deviceConfigObject.config.numSensors    = body.cfg.numSens
-            deviceConfigObject.config.sensors       = body.cfg.sens
+            deviceConfigObject.config.network = body.cfg.net
+            deviceConfigObject.config.modem = body.cfg.mod
+            deviceConfigObject.config.general = body.cfg.gen
+            deviceConfigObject.config.numSensors = body.cfg.numSens
+            deviceConfigObject.config.sensors = body.cfg.sens
 
-            const results = await database.collection('devices').updateOne({'serial': job.data.guid}, {
-                $push: {deviceConfigs: deviceConfigObject}
+            const results = await database.collection('devices').updateOne({ 'serial': job.data.guid }, {
+                $push: { deviceConfigs: deviceConfigObject }
             })
 
             console.log(results)
@@ -384,7 +384,7 @@ queue.process(async (job, done) => {
         }
 
         // This block of code filters out duplicate data
-        const promises = docArray.map(async(doc) => {
+        const promises = docArray.map(async (doc) => {
             const check = await collection.findOne({
                 'metadata.guid': doc.metadata.guid,
                 'metadata.sensor': doc.metadata.sensor,
@@ -405,14 +405,14 @@ queue.process(async (job, done) => {
         if (filtered_docs.length > 0) {
             await collection.insertMany(filtered_docs, (error, result) => {
                 console.log(result)
-                if(result !== undefined){
+                if (result !== undefined) {
 
                     Object.values(result.insertedIds).forEach((id) => {
                         console.log("Insert db _id:" + id);
                     })
                     // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
                     let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
-                    
+
                     let json = JSON.parse(combinedResponse);
                 } else {
                     console.log("Empty data object, nothing was inserted.")
@@ -431,5 +431,5 @@ queue.process(async (job, done) => {
         console.log("Worker Finished")
         done()
     }
-    
+
 })
