@@ -222,12 +222,14 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         {
             incomingCRC = incomingCRC.toLowerCase();
             console.log("\tProvided:\t0x" + incomingCRC);
-            const calculatedIncomingCRC = crc32(JSON.stringify(request.body)).toString(16);
+	    const bufferData = Buffer.from(JSON.stringify(request.body), 'utf8');
+            const calculatedIncomingCRC = crc32(bufferData).toString(16);
             console.log("\tCalculated:\t0x" + calculatedIncomingCRC);
+	    console.log(JSON.stringify(request.body));
             if (incomingCRC != calculatedIncomingCRC)
             {
                 console.log("\tCRC-32:\tERR");
-                return res.status(400).send({ err: 'CRC-32: ERR' });
+                return response.status(400).send({ err: 'CRC-32: ERR' });
             }
             else console.log("\tCRC-32:\tOK");
         }
@@ -319,7 +321,7 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
             const commandShortId = commandExecuted.id;  // last 5 digits of the event ID for identification
             
             // Proceed only if a valid commandShortId exists
-            if (commandShortId?.length) {
+            if (commandShortId) {
                 const commandDate = new Date(commandExecuted.ts * 1000);
                 const commandStat = commandExecuted.stat;  // Get the status of the command acknowledgment
 
