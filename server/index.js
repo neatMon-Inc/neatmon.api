@@ -251,11 +251,15 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
             'now': now,
         }
 
-        const deviceList = await database.collection('devices').find({ serial: doc.guid }).toArray()
+        const deviceList = await database.collection('devices').find({
+            serial: { $regex: new RegExp(doc.guid), $options: 'i' } // Case-insensitive matching
+        }).toArray();
+        
         if (deviceList.length > 0) {
             const job = await queue.add(doc);
         } else {
             console.log(`Error:\n\tDevice with GUID ${doc.guid} does not exist, data will not be inserted`);
+            return res.status(404).send({ error: 'Error with post' });
         }
 
         // Check for control request responses before sending a response
