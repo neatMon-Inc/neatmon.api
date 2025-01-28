@@ -251,11 +251,15 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
             'now': now,
         }
 
-        const deviceList = await database.collection('devices').find({ serial: doc.guid }).toArray()
+        const deviceList = await database.collection('devices').find({
+            serial: { $regex: new RegExp(doc.guid), $options: 'i' } // Case-insensitive matching
+        }).toArray();
+        
         if (deviceList.length > 0) {
             const job = await queue.add(doc);
         } else {
             console.log(`Error:\n\tDevice with GUID ${doc.guid} does not exist, data will not be inserted`);
+            return res.status(404).send({ error: 'Error with post' });
         }
 
         // Check for control request responses before sending a response
@@ -271,7 +275,7 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
                 const controlShortId = ctrlResp.id;  // Use the short_id to identify the controlQueue document
                 
                 // Proceed only if a valid controlShortId exists
-                if (!controlShortId) {
+                if (controlShortId?.length) {
                     const controlDate = new Date(ctrlResp.ts * 1000);
                     const controlStat = ctrlResp.stat;  // Get the status of the control acknowledgment
 
@@ -315,7 +319,7 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
             const commandShortId = commandExecuted.id;  // last 5 digits of the event ID for identification
             
             // Proceed only if a valid commandShortId exists
-            if (!commandShortId) {
+            if (commandShortId?.length) {
                 const commandDate = new Date(commandExecuted.ts * 1000);
                 const commandStat = commandExecuted.stat;  // Get the status of the command acknowledgment
 
@@ -372,8 +376,8 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
                     finalCommand.control.push({ id: ctrl.short_id, ...ctrl.control });
                 })
             }
-            console.log("\tCommand:\t" + JSON.stringify(cmd));
             if (cmd) {
+                console.log("\tCommand:\t" + JSON.stringify(cmd));
                 const shortId = cmd.short_id;
                 if (!shortId) {
                     console.log("Warning: Command does not have a short_id");
@@ -385,9 +389,8 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
                     finalCommand.fwu = cmd.command.fwu;
                 if (cmd.command.cfg && Object.keys(cmd.command.cfg).length > 0)
                     finalCommand.cfg = cmd.command.cfg;
-
-            console.log("\tFinal Command:\t" + JSON.stringify(finalCommand));
             }
+            console.log("\tFinal Command:\t" + JSON.stringify(finalCommand));
 
             // construct the response
             const responseBody = JSON.stringify({ t: Math.floor(Date.now() / 1000), cmd: finalCommand });
@@ -450,7 +453,7 @@ app.get("/api/status", downloadLimit, async (request, response) => {
 */
 app.get("/api/status/time", downloadLimit, async (request, response) => {
     let res = {
-        "t": Date.now()
+        "t": Date.now() / 1000
     }
     response.send(res);
 });
