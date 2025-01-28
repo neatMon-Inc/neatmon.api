@@ -222,12 +222,14 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         {
             incomingCRC = incomingCRC.toLowerCase();
             console.log("\tProvided:\t0x" + incomingCRC);
-            const calculatedIncomingCRC = crc32(JSON.stringify(request.body)).toString(16);
+	    const bufferData = Buffer.from(JSON.stringify(request.body), 'utf8');
+            const calculatedIncomingCRC = crc32(bufferData).toString(16);
             console.log("\tCalculated:\t0x" + calculatedIncomingCRC);
+	    console.log(JSON.stringify(request.body));
             if (incomingCRC != calculatedIncomingCRC)
             {
                 console.log("\tCRC-32:\tERR");
-                return res.status(400).send({ err: 'CRC-32: ERR' });
+                return response.status(400).send({ err: 'CRC-32: ERR' });
             }
             else console.log("\tCRC-32:\tOK");
         }
@@ -271,7 +273,9 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
                 const controlShortId = ctrlResp.id;  // Use the short_id to identify the controlQueue document
                 
                 // Proceed only if a valid controlShortId exists
-                if (!controlShortId) {
+		console.log("Got control with id: " + ctrlResp.id);
+		console.log("Got control with short id: " + controlShortId);
+                if (controlShortId?.length) {
                     const controlDate = new Date(ctrlResp.ts * 1000);
                     const controlStat = ctrlResp.stat;  // Get the status of the control acknowledgment
 
@@ -315,7 +319,7 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
             const commandShortId = commandExecuted.id;  // last 5 digits of the event ID for identification
             
             // Proceed only if a valid commandShortId exists
-            if (!commandShortId) {
+            if (commandShortId) {
                 const commandDate = new Date(commandExecuted.ts * 1000);
                 const commandStat = commandExecuted.stat;  // Get the status of the command acknowledgment
 
@@ -450,7 +454,7 @@ app.get("/api/status", downloadLimit, async (request, response) => {
 */
 app.get("/api/status/time", downloadLimit, async (request, response) => {
     let res = {
-        "t": Date.now()
+        "t": Date.now() / 1000
     }
     response.send(res);
 });
