@@ -38,12 +38,11 @@ queue.process(async (job, done) => {
         await connectToDatabase();
     }
 
-    job.data.guid = sanitizeGuid(job.data.guid); // Sanitize incoming GUID
-
     const metadataSet = new Set()
     try {
         console.log("Worker Started Job")
         console.log(job.data)
+        job.data.guid = sanitizeGuid(job.data.guid); // Sanitize incoming GUID
         const timestamps = []
         let docArray = [];
         let locationUpdate = ''
@@ -191,7 +190,10 @@ queue.process(async (job, done) => {
 
         // START DATA FORWARDING CODE
         console.log('Checking to see if data should be forwarded...')
-        let device = await database.collection('devices').findOne({ "serial": job.data.guid })
+        let device = await database.collection('devices').findOne({
+            "serial": { $regex: new RegExp(job.data.guid), $options: 'i' } // Case-insensitive matching
+        });
+
         if (device) {
             let organization = await database.collection('organizations').findOne({ "name": device.organizationName })
             if (organization) {
