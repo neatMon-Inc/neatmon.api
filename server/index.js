@@ -263,7 +263,7 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
             const job = await queue.add(doc);
         } else {
             console.log(`Error:\n\tDevice with GUID ${doc.guid} does not exist, data will not be inserted`);
-            return res.status(404).send({ error: 'Error with post' });
+            return response.status(404).send({ error: 'Error with post' });
         }
 
         // Check for control request responses before sending a response
