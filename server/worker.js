@@ -42,7 +42,9 @@ queue.process(async (job, done) => {
     try {
         console.log("Worker Started Job")
         console.log(job.data)
+        
         job.data.guid = sanitizeGuid(job.data.guid); // Sanitize incoming GUID
+        
         const timestamps = []
         let docArray = [];
         let locationUpdate = ''
@@ -281,11 +283,12 @@ queue.process(async (job, done) => {
         }
         if (locationUpdate != '') {
             const location = JSON.parse(locationUpdate)
-            const results = await database.collection('devices').updateOne({ 'serial': job.data.guid }, {
+            
+            console.log('Pushing updates to device configuration doc:', location)
+            const results = await database.collection('devices').updateOne({ 'serial': job.data.guid }, { // Sometimes the LAT/LONG can be empty or not sent in the POST
                 $set: location
             })
-            console.log(results)
-            console.log(`Updated device location to ${location.lat}, ${location.long}, ${location.altitude}`)
+            console.log("Result from update of device doc: ", results)
         }
         if (fw || hw || pn) {
             let systemData = {}
@@ -296,15 +299,15 @@ queue.process(async (job, done) => {
             if (pn)
                 systemData.pn = pn
 
-            console.log('Updating document with: ', systemData)
+            console.log('Pushing updates to device configuration doc:', systemData)
 
             const results = await database.collection('devices').updateOne({ 'serial': job.data.guid }, {
                 $set: systemData,
             })
-            console.log(results)
-            console.log('Updates to device system information', systemData)
+            console.log("Result from update of device doc: ", results)
         }
 
+        // TODO search for ID of document for GUID and use that as the primary key instead of the GUID
         if (body.cfg) {
             // Add the configuration to the device's configuration array
             let deviceConfigObject = {}
@@ -316,12 +319,11 @@ queue.process(async (job, done) => {
             deviceConfigObject.config.numSensors = body.cfg.numSens
             deviceConfigObject.config.sensors = body.cfg.sens
 
-            const results = await database.collection('devices').updateOne({ 'serial': job.data.guid }, {
+            console.log('Pushing updates to device configuration doc:', deviceConfigObject)
+            const results = await database.collection('devices').updateOne({ 'serial': job.data.guid }, { // TODO: Update query for GUID search
                 $push: { deviceConfigs: deviceConfigObject }
             })
-
-            console.log(results)
-            console.log('Updates to device configuration information', deviceConfigObject)
+            console.log("Result from update of device doc: ", results)
         }
 
         // This block of code filters out duplicate data
