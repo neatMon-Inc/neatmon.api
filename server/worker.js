@@ -34,15 +34,16 @@ async function connectToDatabase() {
 
 queue.process(async (job, done) => {
     if (!database || !collection) {
-        console.log('Re-establishing connection to database...')
+        console.log('Database: Re-establishing connection...')
         await connectToDatabase();
     }
+    else console.log("Database: Re-using connection....")
 
     const metadataSet = new Set()
     try {
         console.log("Worker Started Job")
         console.log(job.data)
-        
+
         job.data.guid = sanitizeGuid(job.data.guid); // Sanitize incoming GUID
         
         const timestamps = []
@@ -76,6 +77,7 @@ queue.process(async (job, done) => {
                 alias: [''],
             }))
         }
+        else console.log("Data appears to be zero length..")
 
         console.log(job.data)
         Object.keys(job.data.v).forEach((sensor) => {
@@ -190,8 +192,10 @@ queue.process(async (job, done) => {
             }
         })
 
-        // START DATA FORWARDING CODE
-        console.log('Checking to see if data should be forwarded...')
+        /**
+         * Begin REST push to third party API
+         */
+        console.log('Device/Organization Search: Checking to see if data should be forwarded...')
         let device = await database.collection('devices').findOne({
             "serial": { $regex: new RegExp(job.data.guid), $options: 'i' } // Case-insensitive matching
         });
@@ -254,12 +258,12 @@ queue.process(async (job, done) => {
                 }
             }
             else {
-                console.error('Error finding organization from device in the database.')
+                console.error('Organization Search: Error finding organization from device in the database.')
                 console.log(device)
             }
         }
         else {
-            console.error('Error finding device in database for forwarding.')
+            console.error('Device Search: Error finding device in database for forwarding.')
             console.log(job.data)
         }
         // END DATA FORWARDING CODE
@@ -278,17 +282,17 @@ queue.process(async (job, done) => {
             }
         })
         if (sensorArray.length > 0) {
-            console.log('New sensor(s) to add', sensorArray)
+            console.log('Sensors: New sensor(s) to add', sensorArray)
             await database.collection('sensors').insertMany(sensorArray)
         }
         if (locationUpdate != '') {
             const location = JSON.parse(locationUpdate)
             
-            console.log('Pushing updates to device configuration doc:', location)
+            console.log('Device Configuration: Pushing updates to device configuration doc, ', location)
             const results = await database.collection('devices').updateOne({ 'serial': job.data.guid }, { // Sometimes the LAT/LONG can be empty or not sent in the POST
                 $set: location
             })
-            console.log("Result from update of device doc: ", results)
+            console.log("Device Configuration: Result from update of device doc, ", results)
         }
         if (fw || hw || pn) {
             let systemData = {}
@@ -299,12 +303,12 @@ queue.process(async (job, done) => {
             if (pn)
                 systemData.pn = pn
 
-            console.log('Pushing updates to device configuration doc:', systemData)
+            console.log('Device Configuration: Pushing updates to device configuration doc:', systemData)
 
             const results = await database.collection('devices').updateOne({ 'serial': job.data.guid }, {
                 $set: systemData,
             })
-            console.log("Result from update of device doc: ", results)
+            console.log("Device Configuration: Result from update of device doc: ", results)
         }
 
         // TODO search for ID of document for GUID and use that as the primary key instead of the GUID
@@ -319,12 +323,13 @@ queue.process(async (job, done) => {
             deviceConfigObject.config.numSensors = body.cfg.numSens
             deviceConfigObject.config.sensors = body.cfg.sens
 
-            console.log('Pushing updates to device configuration doc:', deviceConfigObject)
+            console.log('Device Configuration: Pushing updates to device configuration doc:', deviceConfigObject)
             const results = await database.collection('devices').updateOne({ 'serial': job.data.guid }, { // TODO: Update query for GUID search
                 $push: { deviceConfigs: deviceConfigObject }
             })
-            console.log("Result from update of device doc: ", results)
+            console.log("Device Configuration: Result from update of device doc: ", results)
         }
+        else console.log("Device Configuration: No configuration keys saved.")
 
         // This block of code filters out duplicate data
         const promises = docArray.map(async (doc) => {
@@ -343,7 +348,7 @@ queue.process(async (job, done) => {
         const filtered_data_with_includes = data_with_includes.filter(v => v.include)
         const filtered_docs = filtered_data_with_includes.map(data => data.value)
 
-        console.log('filtered_docs', filtered_docs)
+        // console.log('filtered_docs', filtered_docs)
 
         if (filtered_docs.length > 0) {
             await collection.insertMany(filtered_docs, (error, result) => {
@@ -362,7 +367,8 @@ queue.process(async (job, done) => {
                 }
             });
         }
-        console.log("Worker Finished")
+        else console.log("Data: No data to be inserted/received")
+        console.log("Worker: Finished")
         done()
     }
     catch (e) {
