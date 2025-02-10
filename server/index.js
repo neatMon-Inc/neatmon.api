@@ -34,7 +34,7 @@ const MONGO_DATABASE_EDITOR_PASSWORD = process.env.MONGO_DATABASE_EDITOR_PASSWOR
 
 const downloadLimit = rateLimit({
     windowMs: 15 * 60 * 1000, // 1 hour
-    max: 500, // max number of requests from device/ip
+    max: 600, // max number of requests from device/ip
     message: 'Too many file download requests from this IP, please try again later'
 });
 
