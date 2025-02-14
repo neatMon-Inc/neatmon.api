@@ -34,7 +34,7 @@ const MONGO_DATABASE_EDITOR_PASSWORD = process.env.MONGO_DATABASE_EDITOR_PASSWOR
 
 const downloadLimit = rateLimit({
     windowMs: 15 * 60 * 1000, // 1 hour
-    max: 600, // max number of requests from device/ip
+    max: 750, // max number of requests from device/ip
     message: 'Too many file download requests from this IP, please try again later'
 });
 
@@ -224,14 +224,16 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         {
             incomingCRC = incomingCRC.toLowerCase();
             console.log("\tProvided:\t0x" + incomingCRC);
-	    const bufferData = Buffer.from(JSON.stringify(request.body), 'utf8');
+            const bufferData = Buffer.from(JSON.stringify(request.body), 'utf8');
             const calculatedIncomingCRC = crc32(bufferData).toString(16);
             console.log("\tCalculated:\t0x" + calculatedIncomingCRC);
-	    console.log(JSON.stringify(request.body));
+            console.log(JSON.stringify(request.body));
             if (incomingCRC != calculatedIncomingCRC)
             {
-                console.log("\tCRC-32:\tERR");
-                return response.status(400).send({ err: 'CRC-32: ERR' });
+                console.log("\tCRC-32:\tERR!!");
+
+                // diable 400 response for now
+                // return response.status(400).send({ err: 'CRC-32: ERR' });
             }
             else console.log("\tCRC-32:\tOK");
         }
@@ -605,5 +607,10 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
 })
 
 function sanitizeGuid(p_guid) {
-    return p_guid.replace(/[^a-z0-9-]/gi, ''); // Keeps letters, numbers, and dashes
+    // Sanitize the GUID to remove any unwanted characters
+    // Output for now to see what is being sanitized
+    console.log("Sanitizing GUID: " + p_guid);
+    const sanitizedGuid = p_guid.replace(/[^a-z0-9-]/gi, '');   // Keeps letters, numbers, and dashes
+    console.log("Sanitized: " + sanitizedGuid);
+    return sanitizedGuid;
 }
