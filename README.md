@@ -68,7 +68,7 @@ Each service has its own Dockerfile. Docker Compose is used for orchestration.
 
 From the root directory:
 
-make         # or `make run`
+`make`         # or `make run`
 
 ### Stop the App
 
@@ -85,7 +85,7 @@ docker stop $(docker ps -aq)
 To stop and remove all containers, volumes, and networks:
 
 CTRL + C
-make nuke
+`make nuke`
 
 ---
 
@@ -95,13 +95,13 @@ If not using Docker Compose, you can build and run the server manually:
 
 ### Build
 
-cd server
-make build
+`cd server`
+`make build`
 
 ### Run
 
-cd server
-make up
+`cd server`
+`make up`
 
 ---
 
@@ -114,7 +114,7 @@ Two utility scripts are included for debugging production connections:
 
 Before use, make them executable:
 
-chmod +x deploy_*
+`chmod +x deploy_*`
 
 These will output detailed logs for a given GUID.
 
