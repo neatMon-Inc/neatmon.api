@@ -1,56 +1,148 @@
-# Description
-This is an example of the data services to receive data from neatMon devices.  Allows incoming data to be received, parsed, and stored in a database for later retrieval in other apps and services.
+# neatMon API SDK
 
-## Helpful Links
-Detailed specifications on the neatMon Open Source API can be found [here.](https://neatmon-inc.github.io/neatmon.api/)
+This repository contains the SDK for a deployable API that receives, parses, and stores data from neatMon Automated Monitoring Nodes (AMNs). It enables seamless integration with databases and other applications for real-time monitoring, analytics, and automation.
 
-For assistance please contact info@neatmon.com or visit the nM user guides and documentation [here.](https://info.neatmon.com/)
+---
 
-# API Technical Overview YouTube Video
-Please see the recorded video covering the deployment and an overview of the menu-driven setup of the Automated Monitoring Nodes [here.](https://www.youtube.com/watch?v=SwGXM8TaJbA&t=304s)
+## 📎 Helpful Links
 
-# Getting Started
-See Environment Variable Setup below. Copy and edit the configuration file.  Bring up the neatMon API using the `make` command. The app can be tested from a web browser at the address `http://localhost/api/status` which should show the message: "API Working Sat Feb 26 2022 08:16:20 GMT+0000 (Coordinated Universal Time)" (The current UTC time should be displayed)
+- [neatMon Open Source API Documentation](https://neatmon-inc.github.io/neatmon.api/)
+- [User Guides and Docs](https://info.neatmon.com/)
+- For support, contact: info@neatmon.com
 
-# Installation
-The API is designed to be deployed with Docker however it can be run also be executed locally with the `node index.js` command.  However, there may be issues that arise as versions differ from development environments and production, and as such Docker is the preferred method for maintaining the consistency between different environments.
+---
 
-## System requirements
-Linux system is preferred, though others can be substituted, the following packages are suggested/required
+## 🎥 API Technical Overview (YouTube)
 
-Required packages:
-* make
-* docker
+Watch a walkthrough of the deployment process and menu-driven setup of the AMNs:  
+[https://www.youtube.com/watch?v=SwGXM8TaJbA&t=304s](https://www.youtube.com/watch?v=SwGXM8TaJbA&t=304s)
 
-## Environment Variables Setup
-Each installation may have different configurations.  To handle this, we have provided a configuration file located at: `/config/.env_sample`.  Copy the `/config/.env_sample` file to `/config/.env` and make appropriate changes.  Additional setup is required to set up the standard Mongo user in the Mongo configuration file: `/database/init-mongo.js`  
+---
 
-## Building the complete app
-In our deployment, the app requires both a database and a server to respond to incoming requests.  We have selected MongoDB for the database, however, it can be updated with others as required.  Due to the complexity of the production environments, it might be advantageous to have a separate DB server and have decided to split the architecture at the folder level with each microservice containing its own Dockerfile.  However, to orchestrate each container, we can use Docker Compose to do this for us.
+## 🚀 Getting Started
 
-### Running and stopping the complete app with Docker Compose
-#### Run
-From the root directory use the command `make` or `make run` to build and run the containers
+To begin, copy and configure the environment variables (see below). Then use the `make` command to launch the API. Once started, you can verify it’s running by visiting:
 
-#### Stopping containers
-Usually, the containers and their subsequent logs will be displayed in the same terminal as when they were started.  To stop a container that is active in the current terminal just press `CTRL + C` and the containers will stop.  Don't worry, you won't lose any work.  If you want to erase everything in the database and start over, see the steps below under the 'Stop + Erase' section below.
+http://localhost/api/status
 
-When a container is running but is not displaying in the active terminal for whatever reason, you can stop it by issuing the command `docker stop $(docker ps -q)` which will terminate all active docker containers with an exit code 0.
-#### Stop + Erase
-To stop the running containers from the dev environment, press `ctrl+c` and then if desired `make flush` to delete any containers, volumes, and network configurations from the previous instance.
+A working response should return:
 
-## Building just the server
-If you decide to use Docker Compose in the section above, then the following server build steps will not be necessary as this will be taken care of for you.
+"API Working Sat Feb 26 2022 08:16:20 GMT+0000 (Coordinated Universal Time)"
 
-### 2) Building Server App
-From the `/server` folder, run the command `make build` to compile and save the corresponding Docker image locally
+---
 
-### 3) Running Server App
-From the `/server` folder, run the command `make up` to run the app and see the debug messages
+## 🛠️ Installation
 
-# Debugging GUID requests and other incoming connections
-From the root directory exists two scripts that are useful for debugging in a production environment once the api has been confirmed running and is running in backgroune (e.g. no front end).  Both scripts will output the detailed log for the GUID when added as a parameter.  Note, they may need to be modified to execute with the `chmod +x deploy_*` command which will change from a normal file to a bash executable script.
+The API is Docker-based and is designed for consistent deployment across environments. While it can also be run with `node index.js`, Docker is recommended to avoid version mismatches.
 
-# Other Useful Information
-## Firmware Over The Air Updates
-When first run, the app will create a directory in the path `../apiFolder` this directory should contain the firmware to send to Automated Monitoring Nodes.  The path for the directory is configurable in the docker-compose file.
+### System Requirements
+
+- Preferred OS: Linux (others supported with adjustments)
+- Required:
+  - `make`
+  - `docker`
+
+---
+
+## ⚙️ Environment Variable Setup
+
+Copy the sample configuration:
+
+cp config/.env_sample config/.env
+
+Update the values in `.env` to match your deployment settings.
+
+You’ll also need to configure MongoDB users in `database/init-mongo.js`.
+
+---
+
+## 🧱 Building the Complete App
+
+The app includes:
+- A Node.js API server
+- A MongoDB database
+
+Each service has its own Dockerfile. Docker Compose is used for orchestration.
+
+### Run the App
+
+From the root directory:
+
+make         # or `make run`
+
+### Stop the App
+
+If running in an active terminal, press:
+
+CTRL + C
+
+To stop all running Docker containers (in any terminal):
+
+docker stop $(docker ps -aq)
+
+### Stop and Erase
+
+To stop and remove all containers, volumes, and networks:
+
+CTRL + C
+make nuke
+
+---
+
+## 🧩 Building Only the Server
+
+If not using Docker Compose, you can build and run the server manually:
+
+### Build
+
+cd server
+make build
+
+### Run
+
+cd server
+make up
+
+---
+
+## 🧪 Debugging GUID Requests
+
+Two utility scripts are included for debugging production connections:
+
+- `deploy_log_guid.sh`
+- `deploy_check_guid.sh`
+
+Before use, make them executable:
+
+chmod +x deploy_*
+
+These will output detailed logs for a given GUID.
+
+---
+
+## 🔄 Firmware Over-the-Air (FOTA) Updates
+
+When first run, the API will create a directory at:
+
+../apiFolder
+
+This path holds firmware for AMNs. The location can be modified in `docker-compose.yml`.
+
+See the documentation for further information on how to perform a FOTA/OTA for specific devices.
+
+---
+
+## 📈 Repository Stats (as of latest commit)
+
+- **First Commit:** _2022-02-25_
+- **Total Commits:** _258 (as of 2025-06-26)_
+
+### 👨‍💻 Primary Languages
+- **JavaScript:** 879 lines  
+- **YAML:** 338 lines  
+- **JSON:** 256 lines  
+- **HTML:** 89 lines  
+- **Shell:** 47 lines  
+- **Dockerfile:** 9 lines  
+
+---
