@@ -490,7 +490,7 @@ app.get("/api/device/data/:p_guid", downloadLimit, async (request, response) => 
     let sort = { 'timestamp': -1 };
     try {
         // console.dir(query); // See query sent by uncommenting this line, helpful for debugging
-        await collection.find(query).sort(sort).toArray(function (error, result) {
+        await collection.find(query).sort(sort).limit(1001).toArray(function (error, result) {
             if (error) {
                 return response.status(500).send("API Error:\n\tBad request");
             }
