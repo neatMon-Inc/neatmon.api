@@ -489,20 +489,17 @@ app.get("/api/device/data/:p_guid", downloadLimit, async (request, response) => 
 
     let sort = { 'timestamp': -1 };
     try {
-        // console.dir(query); // See query sent by uncommenting this line, helpful for debugging
-        await collection.find(query).sort(sort).limit(1001).toArray(function (error, result) {
-            if (error) {
-                return response.status(500).send("API Error:\n\tBad request");
-            }
-            console.log("Query result size: " + JSON.parse(JSON.stringify(result)).length);
-            if (JSON.parse(JSON.stringify(result)).length > 1000) {
-                return response.status(400).json({ "Error": "Query results exceed limits. Reduce requested range." });
-            }
-            response.send(result);
-        });
+        const maxResults = 1000; // Limit the records returned
+        // console.dir(query);
+        const result = await collection.find(query).sort(sort).limit(maxResults + 1).toArray();
+        // console.log("Query result size: " + result.length);
+        if (result.length > maxResults) {
+            return response.status(400).json({ "Error": "Query results exceed limits. Reduce requested range." });
+        }
+        response.send(result);
     } catch (e) {
         console.error("Error:\tParsing incoming request failed\n", e);
-        return response.status(500).send("API Error: Unable to find records in collection");
+        return response.status(500).send("API Error: Incorrect query");
     }
 });
 
