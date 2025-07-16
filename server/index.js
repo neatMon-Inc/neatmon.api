@@ -489,7 +489,7 @@ app.get("/api/device/data/:p_guid", downloadLimit, async (request, response) => 
 
     let sort = { 'timestamp': -1 };
     try {
-        const maxResults = 1000; // Limit the records returned
+        const maxResults = 5000; // Limit the records returned
         // console.dir(query);
         const result = await collection.find(query).sort(sort).limit(maxResults + 1).toArray();
         // console.log("Query result size: " + result.length);
