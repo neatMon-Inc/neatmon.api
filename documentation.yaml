@@ -1,266 +1,281 @@
 openapi: 3.0.3
-
 info:
-  title: neatMon Open Source API
-  description: |-
-    This is documentation for the neatMon Open Source API, to find out more about neatMon products please visit [Our Homepage](https://www.neatmon.com). 
-    
+  title: neatMon Device API
+  version: 1.0.1
+  description: >
+    API for device communication, firmware updates, and data exchange with neatMon servers.  To find out more about neatMon products please visit [Our Homepage](https://www.neatmon.com). 
+
     Some useful links:
     - [Knowledge Base](https://info.neatmon.com)
-  termsOfService: https://hub.neatmon.com/terms
-  contact:
-    email: info@neatmon.com
-  license:
-    name: MIT License
-    url: https://github.com/neatMon-Inc/neatmon.api/blob/workerQueue/LICENSE
-  version: 1.0.11
-
-externalDocs:
-  description: neatMon open source API software repo
-  url: https://github.com/neatMon-Inc/neatmon.api
 
 servers:
-  - url: https://api.neatmon.io:1330
-    description: neatMon API production server
+  - url: http://api.neatmon.io:1330
 
 paths:
-  /api/device/data/{p_guid}:
-    get:
-      description: 'Returns all data for a given GUID starting with the latest. Note:
-        This endpoint has a rate limit of 500 requests per 15 minutes.'
-      parameters:
-      - description: GUID of the device
-        in: path
-        name: p_guid
-        required: true
-        schema:
-          type: string
-      - description: Start time in Unix timestamp
-        in: query
-        name: start
-        schema:
-          type: integer
-      - description: End time in Unix timestamp
-        in: query
-        name: end
-        schema:
-          type: integer
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                items:
-                  type: object
-                type: array
-          description: Data for the given GUID
-        '400':
-          description: Query results exceed limits
-        '500':
-          description: Internal server error
-      summary: Get the status of a GUID
   /api/device/{p_guid}:
     post:
-      description: 'Receives data from devices, processes it, and returns relevant
-        control commands if any exist. This endpoint spawns a worker to handle background
-        tasks related to data storage, processing, and forwarding. Note: This endpoint
-        has a rate limit of 500 requests per 15 minutes.'
+      summary: Device data upload
+      description: >
+        Devices post data to the API with optional firmware/configuration/command responses in return.
+        Requests must include a CRC32 header named `x-crc32` that matches the body checksum. Responses will include a matching `x-crc32` header.
       parameters:
-      - description: GUID of the device
-        in: path
-        name: p_guid
-        required: true
-        schema:
-          type: string
+        - name: p_guid
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: x-crc32
+          in: header
+          required: true
+          schema:
+            type: string
+            description: CRC32 checksum of request body
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DeviceData'
-        required: true
+              type: object
+              required:
+                - t
+              properties:
+                t:
+                  type: number
+                  description: Epoch time in milliseconds
+                length:
+                  type: number
+                fw:
+                  type: string
+                hw:
+                  type: string
+                pn:
+                  type: string
+                v:
+                  type: object
+                body:
+                  type: object
       responses:
         '200':
+          description: Data received successfully. Optional command object returned.
+          headers:
+            x-crc32:
+              description: CRC-32 checksum of response body
+              schema:
+                type: string
           content:
             application/json:
               schema:
-                properties:
-                  cmd:
-                    description: Commands to be sent to the device, if any, from controlQueue
-                      and commandQueue.
-                    properties:
-                      cfg:
-                        description: Configuration update command, if available.
-                        type: object
-                      control:
-                        description: List of control commands to be executed on the
-                          device.
-                        items:
-                          type: string
-                        type: array
-                      fwu:
-                        description: Firmware update command, if available.
-                        properties:
-                          crc:
-                            description: CRC-32 checksum for the firmware update file.
-                            type: string
-                          uri:
-                            description: URI for the firmware update file.
-                            type: string
-                        type: object
-                    type: object
-                  t:
-                    description: Current server timestamp in seconds.
-                    type: integer
                 type: object
-          description: Data processed successfully
+                required:
+                  - t
+                properties:
+                  t:
+                    type: number
+                  cfg:
+                    $ref: '#/components/schemas/DeviceConfiguration'
+                  fwu:
+                    $ref: '#/components/schemas/FirmwareUpdate'
+                  relay:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RelayCommand'
         '400':
-          description: Bad request (e.g., invalid JSON or incorrect CRC)
+          description: Bad request, malformed JSON, or CRC mismatch
         '500':
           description: Internal server error
-      summary: Handle device data post
-  /api/status:
+
+  /api/device/data/{p_guid}:
     get:
-      description: 'Useful for uptime monitoring of the API by a third party. Note:
-        This endpoint has a rate limit of 500 requests per 15 minutes.'
+      summary: Retrieve device sensor data
+      description: >
+        Returns time-series sensor data for a specific device GUID. Results are rate-limited. Use query parameters to specify the time range.
+      parameters:
+        - name: p_guid
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: number
+            description: Start date in epoch milliseconds
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: number
+            description: End date in epoch milliseconds
       responses:
         '200':
-          content:
-            text/plain:
-              schema:
-                example: API Working Mon Aug 29 2024 10:00:00 GMT+0000 (Coordinated
-                  Universal Time)
-                type: string
-          description: API is working
-      summary: Get the status of the API
-  /api/status/time:
-    get:
-      description: 'Returns the current server time as a timestamp. Note: This endpoint
-        has a rate limit of 500 requests per 15 minutes.'
-      responses:
-        '200':
+          description: Sensor data retrieved
           content:
             application/json:
               schema:
-                properties:
-                  t:
-                    example: 1622547802
-                    type: integer
+                type: array
+                items:
+                  type: object
+                  properties:
+                    timestamp:
+                      type: string
+                      format: date-time
+                    metadata:
+                      type: object
+                      properties:
+                        guid:
+                          type: string
+                        id:
+                          type: string
+                        sensor:
+                          type: string
+                        type:
+                          type: string
+                    data:
+                      type: number
+        '400':
+          description: Query results exceed limits. Reduce requested range.
+          content:
+            application/json:
+              schema:
                 type: object
-          description: Current timestamp
-      summary: Get the current time in timestamp format
-  /files/{filename}:
+                properties:
+                  Error:
+                    type: string
+                    example: Query results exceed limits. Reduce requested range.
+        '404':
+          description: No data found
+        '429':
+          description: Too many requests. Clients must back off and retry later.
+          headers:
+            Retry-After:
+              description: Duration to wait before retrying (in seconds)
+              schema:
+                type: integer
+        '500':
+          description: Internal server error
+
+  /api/status/time:
     get:
-      description: 'Retrieves a file from the server, typically for firmware updates.
-        Note: This endpoint has a rate limit of 500 requests per 15 minutes.'
-      parameters:
-      - description: Name of the file
-        in: path
-        name: filename
-        required: true
-        schema:
-          type: string
+      summary: Retrieve current server time
+      description: Returns the current server epoch time.
       responses:
         '200':
+          description: Current time returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  t:
+                    type: number
+                    description: Epoch time in milliseconds
+
+  /api/status:
+    get:
+      summary: API status check
+      description: Returns a simple status object to confirm API availability.
+      responses:
+        '200':
+          description: Server is up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /files/{filename}:
+    get:
+      summary: Download file by name
+      description: >
+        Serves static files such as firmware or configuration blobs. Files include a CRC-32 header for verification.
+        Large files may be chunked and include additional metadata such as size and version.
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File successfully returned
+          headers:
+            x-crc32:
+              description: CRC-32 checksum of file
+              schema:
+                type: string
+            x-file-size:
+              description: Size of the file in bytes
+              schema:
+                type: integer
+            x-file-chunks:
+              description: Number of file chunks (if chunked transfer)
+              schema:
+                type: integer
+            x-version:
+              description: Version of the file
+              schema:
+                type: string
           content:
             application/octet-stream:
               schema:
+                type: string
                 format: binary
-                type: string
-          description: File retrieved successfully
-          headers:
-            CRC-32:
-              description: CRC-32 checksum of the response body for data integrity.
-              schema:
-                type: string
-            Content-Length:
-              description: The length of the response body.
-              schema:
-                type: integer
-            Content-Range:
-              description: The range of bytes being served.
-              schema:
-                type: string
-            Content-Type:
-              description: The content type of the response, always `application/octet-stream`.
-              schema:
-                example: application/octet-stream
-                type: string
         '400':
-          description: Bad request, e.g., missing range header or invalid range.
-        '403':
-          description: Forbidden - the requested file path is outside the allowed
-            directory.
+          description: CRC mismatch. Returned if downloaded file checksum does not match.
         '404':
-          description: File not found.
-        '416':
-          description: Requested range not satisfiable, e.g., start byte is greater
-            than file size.
-        '500':
-          description: Internal server error, e.g., error while downloading file or
-            calculating CRC32.
-      summary: Get a file from the API server
+          description: File not found
 
 components:
   schemas:
-    CommandResponse:
+    DeviceConfiguration:
       type: object
       properties:
-        t:
-          description: Current server timestamp in epoch
-          type: integer
-        cmd:
+        net:
           type: object
-          description: Commands to be sent to the device, if any, from the controlQueue
-            and commandQueue collections in MongoDB
-          properties:
-            cfg:
-              description: Configuration update command, if available.
-              type: object
-            control:
-              description: List of control commands to be executed on the device.
-              type: array
-              items:
-                type: string
-            fwu:
-              type: object
-              description: Firmware update command, if available.
-              properties:
-                uri:
-                  description: URI for the firmware update file.
-                  type: string
-      required: ["t"]
-    DeviceData:
+          description: Network configuration
+        mod:
+          type: object
+          description: Modem configuration
+        gen:
+          type: object
+          description: General configuration
+        numSens:
+          type: integer
+          description: Number of sensors
+        sens:
+          type: array
+          items:
+            type: object
+
+    FirmwareUpdate:
+      type: object
+      properties:
+        url:
+          type: string
+        version:
+          type: string
+        size:
+          type: integer
+        crc32:
+          type: string
+
+    RelayCommand:
       type: object
       properties:
         id:
+          type: integer
+        val:
+          type: boolean
+        startTime:
+          type: integer
+          description: Optional start time in epoch milliseconds
+        stopTime:
+          type: integer
+          description: Optional stop time in epoch milliseconds
+        command:
           type: string
-          description: Unique identifier for the device.
-        hw:
-          type: integer
-          description: Hardware version of the device.
-        fw:
-          type: integer
-          description: Firmware version of the device.
-        v:
-          type: object
-          description: Sensor data collected from the device.
-          additionalProperties:
-            type: array
-            description: An array of sensor readings.
-            items:
-              type: object
-              description: A single, or list of sensor reading(s), including a required timestamp (`ts`) and optional sensor values.
-              properties:
-                ts:
-                  type: integer
-                  description: Timestamp of when the data was collected, in Unix format.
-              additionalProperties:
-                type: number
-                description: |
-                  Placeholder for any sensor value (e.g., temperature or humidity).
-                  The key should be a three-character identifier representing the sensor.
-                maxLength: 3
-                example: 25.5
-                pattern: "^[a-zA-Z0-9]{1,3}$"
-              required: ["ts"]
-      required: ["id"]
+          description: Optional command string for execution
