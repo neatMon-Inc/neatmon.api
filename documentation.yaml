@@ -236,6 +236,4 @@ components:
       properties:
         uri:
           type: string
-          type: string
           description: Optional command string for execution
-
