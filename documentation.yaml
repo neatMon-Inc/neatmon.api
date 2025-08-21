@@ -231,9 +231,10 @@ paths:
 
 components:
   schemas:
-    FirmwareUpdate:
+    fwu:
       type: object
       properties:
         uri:
           type: string
-          description: Optional command string for execution
+          description: Command string for execution of firmware update
+
