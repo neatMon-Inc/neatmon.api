@@ -231,51 +231,11 @@ paths:
 
 components:
   schemas:
-    DeviceConfiguration:
-      type: object
-      properties:
-        net:
-          type: object
-          description: Network configuration
-        mod:
-          type: object
-          description: Modem configuration
-        gen:
-          type: object
-          description: General configuration
-        numSens:
-          type: integer
-          description: Number of sensors
-        sens:
-          type: array
-          items:
-            type: object
-
     FirmwareUpdate:
       type: object
       properties:
-        url:
+        uri:
           type: string
-        version:
-          type: string
-        size:
-          type: integer
-        crc32:
-          type: string
-
-    RelayCommand:
-      type: object
-      properties:
-        id:
-          type: integer
-        val:
-          type: boolean
-        startTime:
-          type: integer
-          description: Optional start time in epoch milliseconds
-        stopTime:
-          type: integer
-          description: Optional stop time in epoch milliseconds
-        command:
           type: string
           description: Optional command string for execution
+
