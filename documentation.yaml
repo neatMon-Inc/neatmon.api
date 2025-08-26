@@ -237,4 +237,79 @@ components:
         uri:
           type: string
           description: Command string for execution of firmware update
+    cfg:
+      type: object
+      properties:
+        htp:
+          type: object
+          description: HTTP communication configuration
+          properties:
+            srv:
+              type: string
+              description: HTTP server address
+            pth:
+              type: string
+              description: HTTP request path
+            prt:
+              type: integer
+              description: HTTP server port
+            syn:
+              type: integer
+              description: HTTP sync interval
+            als:
+              type: integer
+              description: HTTP alert sync interval
 
+        mod:
+          type: object
+          description: Modem configuration
+          properties:
+            mdl:
+              type: string
+              description: Modem type
+            fw:
+              type: integer
+              description: Modem firmware version
+            apn:
+              type: string
+              description: Access Point Name
+            usr:
+              type: string
+              description: Modem username
+            pwd:
+              type: string
+              description: Modem password
+            rg:
+              type: string
+              description: Modem registration mode
+            dbg:
+              type: boolean
+              description: Enable modem debug
+
+        wfi:
+          type: object
+          description: Wi-Fi configuration
+          properties:
+            ssd:
+              type: string
+              description: Wi-Fi SSID
+            key:
+              type: string
+              description: Wi-Fi password
+
+        gen:
+          type: object
+          description: General configuration
+          properties:
+            dmo:
+              type: boolean
+              description: Demo mode enable
+            bms:
+              type: boolean
+              description: Battery management enable
+            slp:
+              type: integer
+              description: Sleep mode
+            pwr:
+              type: integer
+              description: Power mode
