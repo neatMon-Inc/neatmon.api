@@ -72,13 +72,13 @@ paths:
                   t:
                     type: number
                   cfg:
-                    $ref: '#/components/schemas/DeviceConfiguration'
+                    $ref: '#/components/schemas/cfg'
                   fwu:
-                    $ref: '#/components/schemas/FirmwareUpdate'
+                    $ref: '#/components/schemas/fwu'
                   relay:
                     type: array
                     items:
-                      $ref: '#/components/schemas/RelayCommand'
+                      $ref: '#/components/schemas/relay'
         '400':
           description: Bad request, malformed JSON, or CRC mismatch
         '500':
