@@ -18,20 +18,11 @@ services:
             - "1330:5000"
         restart: always
         command: "node /usr/src/app/index.js"
-        depends_on:
-            - "redis"
     worker:
         build: ./server
         env_file:
             - ./config/.env
         volumes:
             - "./server:/usr/src/app"
-        depends_on:
-            - redis
         restart: always
         command: node /usr/src/app/worker.js
-    redis:
-        image: redis:alpine
-        expose:
-            - "6379"
-        restart: always
