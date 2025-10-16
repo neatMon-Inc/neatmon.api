@@ -4,9 +4,6 @@ const { json } = require('express');
 const axios = require('axios');
 const ObjectId = require('bson').ObjectId
 let database, collection;
-console.log('Starting up worker queue...')
-const queue = new bull('data-queue', 'redis://redis:6379');
-console.log('Queue started!')
 const MongoClient = require("mongodb").MongoClient;
 FROM_NEATMON_IO = process.env.FROM_NEATMON_IO
 CONNECTION_URL = process.env.MONGO_URL;
@@ -15,6 +12,43 @@ const DATABASE_COLLECTION = process.env.MONGO_DATABASE_COLLECTION_DATA;
 const DATABASE_CONFIG = process.env.MONGO_DATABASE_COLLECTION_CONFIGURATION;
 const MONGO_DATABASE_EDITOR_USER = process.env.MONGO_DATABASE_EDITOR_USER;
 const MONGO_DATABASE_EDITOR_PASSWORD = process.env.MONGO_DATABASE_EDITOR_PASSWORD;
+const REDIS_USERNAME = process.env.REDIS_USERNAME;
+const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
+const REDIS_HOST = process.env.REDIS_HOST;
+const REDIS_PORT = process.env.REDIS_PORT;
+const REDIS_DB = process.env.REDIS_DB || 0;
+
+const queue = new bull('data-queue', {
+  redis: {
+    host: REDIS_HOST,
+    port: REDIS_PORT,
+    db: REDIS_DB,
+    username: REDIS_USERNAME,
+    password: REDIS_PASSWORD,
+    tls: {}
+  }
+});
+
+queue.on('ready', () => {
+  console.log(`Worker connected to Redis at ${REDIS_HOST}:${REDIS_PORT}, DB ${REDIS_DB}`);
+});
+
+queue.on('error', (err) => {
+  console.error(`Redis connection error: ${err.message}`);
+});
+
+queue.on('stalled', (job) => {
+  console.warn(`Job ${job.id} stalled, retrying...`);
+});
+
+queue.once('error', (err) => {
+  console.error('Worker could not connect to Redis. Exiting process.');
+  console.error(err);
+  process.exit(1);
+});
+
+console.log('🚀 Worker queue initialized, waiting for jobs...');
+
 
 async function connectToDatabase() {
     console.log("Connecting to database");

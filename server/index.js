@@ -17,7 +17,6 @@ const ObjectId = require("mongodb").ObjectID;
 const bull = require('bull');
 const crc32 = require('crc/crc32');
 const rateLimit = require('express-rate-limit');
-const queue = new bull('data-queue', 'redis://redis:6379')
 const sanitize = require("sanitize-filename");
 
 INSIDE_NEATMON = process.env.INSIDE_NEATMON
@@ -31,6 +30,41 @@ const DATABASE_COLLECTION = process.env.MONGO_DATABASE_COLLECTION_DATA;
 const DATABASE_CONFIG = process.env.MONGO_DATABASE_COLLECTION_CONFIGURATION;
 const MONGO_DATABASE_EDITOR_USER = process.env.MONGO_DATABASE_EDITOR_USER;
 const MONGO_DATABASE_EDITOR_PASSWORD = process.env.MONGO_DATABASE_EDITOR_PASSWORD;
+
+const REDIS_USERNAME = process.env.REDIS_USERNAME;
+const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
+const REDIS_HOST = process.env.REDIS_HOST;
+const REDIS_PORT = process.env.REDIS_PORT;
+const REDIS_DB = process.env.REDIS_DB || 0;
+
+const queue = new bull('data-queue', {
+  redis: {
+    host: REDIS_HOST,
+    port: REDIS_PORT,
+    db: REDIS_DB,
+    username: REDIS_USERNAME,
+    password: REDIS_PASSWORD,
+    tls: {}
+  }
+});
+
+// Attach event listeners for robust queue error handling
+queue.on('error', (err) => {
+  console.error(`Redis connection error: ${err.message}`);
+});
+
+queue.once('error', (err) => {
+  console.error('Redis connection failed, exiting process:', err);
+  process.exit(1);
+});
+
+queue.on('stalled', (job) => {
+  console.warn(`Job ${job.id} stalled, retrying...`);
+});
+
+queue.on('ready', () => {
+  console.log(`Connected Bull queue to Redis at ${REDIS_HOST}:${REDIS_PORT}, DB ${REDIS_DB}`);
+});
 
 const downloadLimit = rateLimit({
     windowMs: 15 * 60 * 1000, // 1 hour
