@@ -15,6 +15,7 @@ const BodyParser = require("body-parser");
 const MongoClient = require("mongodb").MongoClient;
 const ObjectId = require("mongodb").ObjectID;
 const bull = require('bull');
+const crypto = require("crypto");
 const crc32 = require('crc/crc32');
 const rateLimit = require('express-rate-limit');
 const sanitize = require("sanitize-filename");
@@ -86,7 +87,8 @@ const server = http.createServer({}, app).listen(5000, async () => {
             database = client.db(DATABASE_NAME);
             console.log(DATABASE_COLLECTION)
             collection = database.collection(DATABASE_COLLECTION); // data storage
-            unit_configuration = database.collection(DATABASE_CONFIG); // password storage
+            unit_configuration = database.collection(DATABASE_CONFIG); //
+            organizations = database.collection('organizations');
             console.log("Connected to `" + DATABASE_NAME + ":" + DATABASE_CONFIG + ", " + DATABASE_COLLECTION + "`!");
         });
     } catch (e) {
@@ -167,31 +169,77 @@ app.use((err, req, res, next) => {
     }
 })
 
-let database, collection;
+let database, collection, unit_configuration, organizations;
 
 //////////////////////////////////////////////////////////
 //// FUNCTIONS                                      //////
 //////////////////////////////////////////////////////////
-async function checkPword(p_pword, p_guid) {
-    const query = { GUID: p_guid };
-    console.log("Checking for " + p_guid + ", " + p_pword);
-    return new Promise(function () {
-        setTimeout(function () {
-            try {
-                unit_configuration.findOne(query, (error, result) => {
-                    console.log("Result: " + result);
-                    if (error) {
-                        return 0;
-                    }
-                    else if (!result) return 0;
-                    else return 1;
-                });
-            } catch (error) {
-                console.log("ERROR retrieving password");
-                return 0;
-            }
-        }, 1000) // wait 1000mS for response..
-    })
+async function verifyOrgSignature(req, res, next) {
+    try {
+        const timestamp = req.get("x-nm-timestamp");
+        const signature = req.get("x-nm-signature");
+
+        if (!timestamp || !signature) {
+            return res.status(401).send("Missing authentication headers");
+        }
+
+        const now = Math.floor(Date.now() / 1000);
+        const ts = parseInt(timestamp, 10);
+
+        if (!Number.isFinite(ts) || Math.abs(now - ts) > 300) {
+            return res.status(401).send("Request expired");
+        }
+
+        const guid = sanitizeGuid(req.params.p_guid);
+
+        const device = await database.collection("devices").findOne({
+            serial: guid
+        });
+
+        if (!device) {
+            return res.status(404).send("Device not found");
+        }
+
+        if (!device.organization) {
+            return res.status(401).send("Device not linked to organization");
+        }
+
+        const org = await organizations.findOne({
+            _id: new ObjectId(device.organization)
+        });
+
+        if (!org) {
+            return res.status(401).send("Not authorized");
+        }
+
+        req.neatmonOrg = org;
+
+        if (!org.secretKey || org.secretKey.length === 0) {
+            console.warn(`[LEGACY ACCESS] Org ${org._id} has no secretKey. Allowing unsecured request.`);
+            return next();
+        }
+
+        if (org.secretKey.length < 32) {
+            return res.status(403).send("REST API key not configured");
+        }
+
+        const payload = `${timestamp}${req.method}${req.originalUrl}`;
+
+        const expected = crypto
+            .createHmac("sha256", org.secretKey)
+            .update(payload)
+            .digest("hex");
+
+        if (expected !== signature) {
+            return res.status(401).send("Invalid signature");
+        }
+
+        next();
+
+    } catch (err) {
+        console.error("Auth error:", err);
+        return res.status(500).send("Authentication failure");
+    }
 }
 
 //////////////////////////////////////////////////////////
@@ -500,7 +548,7 @@ app.get("/api/status/time", downloadLimit, async (request, response) => {
 ** Get the status of a GUID passed as parameter
 ** Returns all data for a given GUID starting with the latest
 */
-app.get("/api/device/data/:p_guid", downloadLimit, async (request, response) => {
+app.get("/api/device/data/:p_guid", downloadLimit, verifyOrgSignature, async (request, response) => {
     const m_guid = request.params.p_guid;
     const start = request.query.start;
     const end = request.query.end;
@@ -509,7 +557,6 @@ app.get("/api/device/data/:p_guid", downloadLimit, async (request, response) => 
     const startDate = start ? new Date(parseInt(start * 1000)).toISOString() : null;
     const endDate = end ? new Date(parseInt(end * 1000)).toISOString() : null;
 
-    // {"metadata.guid" : "my-guid-here" , "timestamp" : {$gte : ISODate('2024-07-15T00:00:01.000')}}
     let query = { 'metadata.guid': m_guid };
     if (startDate || endDate) {
         query.timestamp = {};
@@ -523,10 +570,10 @@ app.get("/api/device/data/:p_guid", downloadLimit, async (request, response) => 
 
     let sort = { 'timestamp': -1 };
     try {
-        const maxResults = 5000; // Limit the records returned
+        const maxResults = 10000; // Limit the records returned
         // console.dir(query);
         const result = await collection.find(query).sort(sort).limit(maxResults + 1).toArray();
-        // console.log("Query result size: " + result.length);
+        console.log("Query result size: " + result.length);
         if (result.length > maxResults) {
             return response.status(400).json({ "Error": "Query results exceed limits. Reduce requested range." });
         }
