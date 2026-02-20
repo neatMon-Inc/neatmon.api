@@ -66,7 +66,7 @@ async function connectToDatabase() {
     }
 }
 
-queue.process(async (job, done) => {
+queue.process(async (job) => {
     if (!database || !collection) {
         console.log('Database: Re-establishing connection...')
         await connectToDatabase();
@@ -113,7 +113,26 @@ queue.process(async (job, done) => {
         }
         else console.log("Data appears to be zero length..")
 
-        console.log(job.data)
+        const isBackup = job.data.backup === true
+        if (isBackup) 
+        {
+            console.log("Backup data received!  Enqueing smart formula reset")
+            await database.collection('formulas').updateMany(
+                {
+                    guid: job.data.guid,
+                    type: { $ne: "calibration" }, // Don't apply to calibration formulas
+                    $or: [ // Prevent re-write if already true
+                        { recalculate: { $exists: false } },
+                        { recalculate: false }
+                    ]
+                },
+                {
+                    $set: { recalcRequested: true }
+                }
+            );
+        }
+
+        // console.log(job.data)
         Object.keys(job.data.v).forEach((sensor) => {
             if (sensor === 'sys') {
                 job.data.v[sensor].forEach((entry) => {
@@ -275,8 +294,8 @@ queue.process(async (job, done) => {
                             else {
                                 console.log('Forwarding successful!')
                             }
-                            console.log('DATA')
-                            console.log(data);
+                            // console.log('DATA')
+                            // console.log(data);
                         } catch (e) {
                             console.log('Something went wrong when forwarding to webhook')
                             console.log(e)
@@ -293,12 +312,12 @@ queue.process(async (job, done) => {
             }
             else {
                 console.error('Organization Search: Error finding organization from device in the database.')
-                console.log(device)
+                // console.log(device)
             }
         }
         else {
             console.error('Device Search: Error finding device in database for forwarding.')
-            console.log(job.data)
+            // console.log(job.data)
         }
         // END DATA FORWARDING CODE
 
@@ -326,7 +345,7 @@ queue.process(async (job, done) => {
             const results = await database.collection('devices').updateOne({ 'serial': job.data.guid }, { // Sometimes the LAT/LONG can be empty or not sent in the POST
                 $set: location
             })
-            console.log("Device Configuration: Result from update of device doc, ", results)
+            // console.log("Device Configuration: Result from update of device doc, ", results)
         }
         if (fw || hw || pn) {
             let systemData = {}
@@ -342,7 +361,7 @@ queue.process(async (job, done) => {
             const results = await database.collection('devices').updateOne({ 'serial': job.data.guid }, {
                 $set: systemData,
             })
-            console.log("Device Configuration: Result from update of device doc: ", results)
+            // console.log("Device Configuration: Result from update of device doc: ", results)
         }
 
         // TODO search for ID of document for GUID and use that as the primary key instead of the GUID
@@ -386,12 +405,12 @@ queue.process(async (job, done) => {
 
         if (filtered_docs.length > 0) {
             await collection.insertMany(filtered_docs, (error, result) => {
-                console.log(result)
+                // console.log(result)
                 if (result !== undefined) {
 
-                    Object.values(result.insertedIds).forEach((id) => {
-                        console.log("Insert db _id:" + id);
-                    })
+                    // Object.values(result.insertedIds).forEach((id) => {
+                    //     console.log("Insert db _id:" + id);
+                    // })
                     // console.log("To view the posted data go to http://localhost/api/device/" + result.insertedId);
                     let combinedResponse = "{\"t\":\"" + Date.now() + "\"}";
 
@@ -403,7 +422,6 @@ queue.process(async (job, done) => {
         }
         else console.log("Data: No data to be inserted/received")
         console.log("Worker: Finished")
-        done()
     }
     catch (e) {
         console.log('An error occurred at some point during this job.')
@@ -412,7 +430,6 @@ queue.process(async (job, done) => {
         console.log('\nError that occurred:\n')
         console.log(e)
         console.log("Worker Finished")
-        done()
     }
 
 })
