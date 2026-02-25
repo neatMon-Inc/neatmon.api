@@ -121,10 +121,6 @@ queue.process(async (job) => {
                 {
                     guid: job.data.guid,
                     type: { $ne: "calibration" }, // Don't apply to calibration formulas
-                    $or: [ // Prevent re-write if already true
-                        { recalculate: { $exists: false } },
-                        { recalculate: false }
-                    ]
                 },
                 {
                     $set: { recalcRequested: true }
