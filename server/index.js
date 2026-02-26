@@ -39,32 +39,32 @@ const REDIS_PORT = process.env.REDIS_PORT;
 const REDIS_DB = process.env.REDIS_DB || 0;
 
 const queue = new bull('data-queue', {
-  redis: {
-    host: REDIS_HOST,
-    port: REDIS_PORT,
-    db: REDIS_DB,
-    username: REDIS_USERNAME,
-    password: REDIS_PASSWORD,
-    tls: {}
-  }
+    redis: {
+        host: REDIS_HOST,
+        port: REDIS_PORT,
+        db: REDIS_DB,
+        username: REDIS_USERNAME,
+        password: REDIS_PASSWORD,
+        tls: {}
+    }
 });
 
 // Attach event listeners for robust queue error handling
 queue.on('error', (err) => {
-  console.error(`Redis connection error: ${err.message}`);
+    console.error(`Redis connection error: ${err.message}`);
 });
 
 queue.once('error', (err) => {
-  console.error('Redis connection failed, exiting process:', err);
-  process.exit(1);
+    console.error('Redis connection failed, exiting process:', err);
+    process.exit(1);
 });
 
 queue.on('stalled', (job) => {
-  console.warn(`Job ${job.id} stalled, retrying...`);
+    console.warn(`Job ${job.id} stalled, retrying...`);
 });
 
 queue.on('ready', () => {
-  console.log(`Connected Bull queue to Redis at ${REDIS_HOST}:${REDIS_PORT}, DB ${REDIS_DB}`);
+    console.log(`Connected Bull queue to Redis at ${REDIS_HOST}:${REDIS_PORT}, DB ${REDIS_DB}`);
 });
 
 const downloadLimit = rateLimit({
@@ -176,20 +176,6 @@ let database, collection, unit_configuration, organizations;
 //////////////////////////////////////////////////////////
 async function verifyOrgSignature(req, res, next) {
     try {
-        const timestamp = req.get("x-nm-timestamp");
-        const signature = req.get("x-nm-signature");
-
-        if (!timestamp || !signature) {
-            return res.status(401).send("Missing authentication headers");
-        }
-
-        const now = Math.floor(Date.now() / 1000);
-        const ts = parseInt(timestamp, 10);
-
-        if (!Number.isFinite(ts) || Math.abs(now - ts) > 300) {
-            return res.status(401).send("Request expired");
-        }
-
         const guid = sanitizeGuid(req.params.p_guid);
 
         const device = await database.collection("devices").findOne({
@@ -214,23 +200,60 @@ async function verifyOrgSignature(req, res, next) {
 
         req.neatmonOrg = org;
 
-        if (!org.secretKey || org.secretKey.length === 0) {
+        if (!org.secretKey || org.secretKey.trim().length === 0) {
             console.warn(`[LEGACY ACCESS] Org ${org._id} has no secretKey. Allowing unsecured request.`);
             return next();
         }
 
-        if (org.secretKey.length < 32) {
-            return res.status(403).send("REST API key not configured");
+        const timestamp = req.get("x-nm-timestamp");
+        const signature = req.get("x-nm-signature");
+
+        if (!timestamp || !signature) {
+            return res.status(401).send("Missing authentication headers");
         }
 
-        const payload = `${timestamp}${req.method}${req.originalUrl}`;
+        const now = Math.floor(Date.now() / 1000);
+        const ts = parseInt(timestamp, 10);
+
+        if (!Number.isFinite(ts) || Math.abs(now - ts) > 300) {
+            return res.status(401).send("Request expired");
+        }
+
+        // Sort query keys so order never matters
+        const canonicalQuery = Object.keys(req.query)
+            .sort()
+            .map((k) => {
+                const v = req.query[k];
+                // Support array query params safely
+                if (Array.isArray(v)) return v.map((x) => `${k}=${encodeURIComponent(String(x))}`).join("&");
+                return `${k}=${encodeURIComponent(String(v))}`;
+            })
+            .join("&");
+
+        const canonicalPath = req.path;
+        const canonicalUrl = canonicalQuery ? `${canonicalPath}?${canonicalQuery}` : canonicalPath;
+
+        const payload = `${timestamp}${req.method}${canonicalUrl}`;
 
         const expected = crypto
             .createHmac("sha256", org.secretKey)
             .update(payload)
             .digest("hex");
 
-        if (expected !== signature) {
+        const expectedBuf = Buffer.from(expected, "hex");
+        const providedBuf = Buffer.from(String(signature || ""), "hex");
+
+        console.log("[HMAC DEBUG] originalUrl:", req.originalUrl);
+        console.log("[HMAC DEBUG] canonicalUrl:", canonicalUrl);
+        console.log("[HMAC DEBUG] payload:", payload);
+        console.log("[HMAC DEBUG] expected:", expected);
+        console.log("[HMAC DEBUG] provided:", signature);
+        
+        if (expectedBuf.length !== providedBuf.length) {
+            return res.status(401).send("Invalid signature");
+        }
+
+        if (!crypto.timingSafeEqual(expectedBuf, providedBuf)) {
             return res.status(401).send("Invalid signature");
         }
 
@@ -298,20 +321,17 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         console.log("\tPN:\t" + request.body.pn); // not included in every post
         console.log("Post/Length:\t" + length);
         console.log("Post/CRC-32:");
-        if (!incomingCRC)
-        { // Older firmware support without CRC checks
+        if (!incomingCRC) { // Older firmware support without CRC checks
             console.log("WARNING: No CRC included in post, skipping CRC checks.  Recommend updating firmware, contact nM support.")
         }
-        else
-        {
+        else {
             incomingCRC = incomingCRC.toLowerCase();
             console.log("\tProvided:\t0x" + incomingCRC);
-	    const bufferData = Buffer.from(JSON.stringify(request.body), 'utf8');
+            const bufferData = Buffer.from(JSON.stringify(request.body), 'utf8');
             const calculatedIncomingCRC = crc32(bufferData).toString(16);
             console.log("\tCalculated:\t0x" + calculatedIncomingCRC);
-	    console.log(JSON.stringify(request.body));
-            if (incomingCRC != calculatedIncomingCRC)
-            {
+            console.log(JSON.stringify(request.body));
+            if (incomingCRC != calculatedIncomingCRC) {
                 console.log("\tCRC-32:\tERR");
                 return response.status(400).send({ err: 'CRC-32: ERR' });
             }
@@ -340,7 +360,7 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         const deviceList = await database.collection('devices').find({
             serial: { $regex: new RegExp(doc.guid), $options: 'i' } // Case-insensitive matching
         }).toArray();
-        
+
         if (deviceList.length > 0) {
             const job = await queue.add(doc);
         } else {
@@ -355,11 +375,11 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         // Adding a timestamp to the executed field prevents the control from being sent again
         if (controlsExecuted && Object.keys(controlsExecuted).length > 0) {
             console.log("Control Record(s): ");
-            
+
             // Loop through each control response object
             controlsExecuted.forEach((ctrlResp) => {
                 const controlShortId = ctrlResp.id;  // Use the short_id to identify the controlQueue document
-                
+
                 // Proceed only if a valid controlShortId exists
                 if (controlShortId?.length) {
                     const controlDate = new Date(ctrlResp.ts * 1000);
@@ -400,10 +420,10 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
         // If there are executed commands, update their executed field with a timestamp in the commandQueue
         // Adding a timestamp to the executed field prevents the command from being sent again
         if (commandExecuted && Object.keys(commandExecuted).length > 0) {
-            
+
             // Use the short_id to identify the commandQueue document
             const commandShortId = commandExecuted.id;  // last 5 digits of the event ID for identification
-            
+
             // Proceed only if a valid commandShortId exists
             if (commandShortId) {
                 const commandDate = new Date(commandExecuted.ts * 1000);
@@ -416,7 +436,7 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
 
                 // Search for the matching command document in the database by short ID and GUID
                 console.log("Searching for database record with short ID " + commandShortId + " and GUID " + doc.guid);
-                
+
                 // Update the commandQueue record by setting the executed timestamp and status
                 const updateResult = database.collection('commandQueue').updateOne({
                     short_id: commandShortId,
@@ -594,15 +614,15 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
         //  Unless changed, in your docker-compose the local filesystem 
         //  should direct to the folder ../apiFolder should contain the files for this route
         var requestPath = sanitize(request.params.filename); // Sanitize input
-        var filePath = path.resolve(FILE_DIRECTORY, requestPath);    
-        
+        var filePath = path.resolve(FILE_DIRECTORY, requestPath);
+
         if (!filePath.startsWith(FILE_DIRECTORY)) {
             response.status(403).send('Forbidden');
             return;
         }
 
         let range = request.headers.range;
-        console.log("Incoming request for file:\n\tPath:\t" + filePath  + "\n\tRange (bytes):\t" + range + "\n\tFrom:\t" + request.ip);
+        console.log("Incoming request for file:\n\tPath:\t" + filePath + "\n\tRange (bytes):\t" + range + "\n\tFrom:\t" + request.ip);
 
         if (!fileSystem.existsSync(filePath)) {
             response.status(404).send('ERR: File not found');
@@ -628,8 +648,7 @@ app.get("/files/:filename", downloadLimit, async (request, response) => {
             console.log("\tWarning: Outside end range of filesize.  Adjusting response to available bytes and size.");
             end = stat.size - 1;
         }
-        else if (end < 0)
-        {
+        else if (end < 0) {
             console.log("\tWarning: Request outside end byte range of file..");
             return response.status(416).send("Bad request.  End byte is less than zero!");
         }
