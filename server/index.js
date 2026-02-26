@@ -243,12 +243,6 @@ async function verifyOrgSignature(req, res, next) {
         const expectedBuf = Buffer.from(expected, "hex");
         const providedBuf = Buffer.from(String(signature || ""), "hex");
 
-        console.log("[HMAC DEBUG] originalUrl:", req.originalUrl);
-        console.log("[HMAC DEBUG] canonicalUrl:", canonicalUrl);
-        console.log("[HMAC DEBUG] payload:", payload);
-        console.log("[HMAC DEBUG] expected:", expected);
-        console.log("[HMAC DEBUG] provided:", signature);
-        
         if (expectedBuf.length !== providedBuf.length) {
             return res.status(401).send("Invalid signature");
         }
