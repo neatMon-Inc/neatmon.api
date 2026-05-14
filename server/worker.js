@@ -3,10 +3,10 @@ const bull = require('bull');
 const { json } = require('express');
 const axios = require('axios');
 const ObjectId = require('bson').ObjectId
-let database, collection;
+const math = require('mathjs');
 const MongoClient = require("mongodb").MongoClient;
-FROM_NEATMON_IO = process.env.FROM_NEATMON_IO
-CONNECTION_URL = process.env.MONGO_URL;
+const FROM_NEATMON_IO = process.env.FROM_NEATMON_IO
+const CONNECTION_URL = process.env.MONGO_URL;
 const DATABASE_NAME = process.env.MONGO_DATABASE_NAME;
 const DATABASE_COLLECTION = process.env.MONGO_DATABASE_COLLECTION_DATA;
 const DATABASE_CONFIG = process.env.MONGO_DATABASE_COLLECTION_CONFIGURATION;
@@ -17,6 +17,7 @@ const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 const REDIS_HOST = process.env.REDIS_HOST;
 const REDIS_PORT = process.env.REDIS_PORT;
 const REDIS_DB = process.env.REDIS_DB || 0;
+let database, collection;
 
 const queue = new bull('data-queue', {
   redis: {
@@ -268,10 +269,12 @@ queue.process(async (job) => {
                             if (organization.secretKey !== null && organization.secretKey !== undefined && organization.secretKey !== 'None' && organization.secretKey !== 'undefined' && organization.secretKey !== '') {
                                 console.log('Secret key: ' + organization.secretKey)
                                 console.log('Forwarding data...')
-                                res = await axios.post(newAddress, JSON.stringify(job.data.body), {
-                                    "x-api-key": organization.secretKey,
-                                    'Content-Type': 'application/json'
-                                })
+                                res = await axios.post(newAddress, JSON.stringify(forwardingBody), {
+                                    headers: {
+                                        'x-api-key': organization.secretKey,
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
                             }
                             else {
                                 console.log('No secret key found. Proceeding without it.')
