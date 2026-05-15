@@ -3,10 +3,10 @@ const bull = require('bull');
 const { json } = require('express');
 const axios = require('axios');
 const ObjectId = require('bson').ObjectId
-let database, collection;
+const math = require('mathjs');
 const MongoClient = require("mongodb").MongoClient;
-FROM_NEATMON_IO = process.env.FROM_NEATMON_IO
-CONNECTION_URL = process.env.MONGO_URL;
+const FROM_NEATMON_IO = process.env.FROM_NEATMON_IO
+const CONNECTION_URL = process.env.MONGO_URL;
 const DATABASE_NAME = process.env.MONGO_DATABASE_NAME;
 const DATABASE_COLLECTION = process.env.MONGO_DATABASE_COLLECTION_DATA;
 const DATABASE_CONFIG = process.env.MONGO_DATABASE_COLLECTION_CONFIGURATION;
@@ -17,6 +17,7 @@ const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 const REDIS_HOST = process.env.REDIS_HOST;
 const REDIS_PORT = process.env.REDIS_PORT;
 const REDIS_DB = process.env.REDIS_DB || 0;
+let database, collection;
 
 const queue = new bull('data-queue', {
   redis: {
@@ -262,25 +263,36 @@ queue.process(async (job) => {
                         }
                         console.log('Organization\'s forwarding address: ' + newAddress)
 
+                        const forwardingBody = await applyCalibrations(
+                            database,
+                            job.data.guid,
+                            job.data.body
+                        );
+
+                        console.log('[CALIBRATION] Final forwarding payload:');
+                        console.dir(forwardingBody, { depth: null });
+
                         try {
                             let res = null;
 
                             if (organization.secretKey !== null && organization.secretKey !== undefined && organization.secretKey !== 'None' && organization.secretKey !== 'undefined' && organization.secretKey !== '') {
                                 console.log('Secret key: ' + organization.secretKey)
                                 console.log('Forwarding data...')
-                                res = await axios.post(newAddress, JSON.stringify(job.data.body), {
-                                    "x-api-key": organization.secretKey,
-                                    'Content-Type': 'application/json'
-                                })
+                                res = await axios.post(newAddress, JSON.stringify(forwardingBody), {
+                                    headers: {
+                                        'x-api-key': organization.secretKey,
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
                             }
                             else {
                                 console.log('No secret key found. Proceeding without it.')
                                 console.log('Forwarding data...')
-                                res = await axios.post(newAddress, JSON.stringify(job.data.body), {
+                                res = await axios.post(newAddress, JSON.stringify(forwardingBody), {
                                     headers: {
                                         'Content-Type': 'application/json'
                                     }
-                                })
+                                });
                             }
 
                             let data = res.data;
@@ -432,4 +444,140 @@ queue.process(async (job) => {
 
 function sanitizeGuid(p_guid) {
     return p_guid.replace(/[^a-z0-9-]/gi, ''); // Keeps letters, numbers, and dashes
+}
+
+function parseSensorType(type) {
+    if (!type || typeof type !== 'string') {
+        return {
+            key: type,
+            index: null
+        };
+    }
+
+    const parts = type.split(':');
+
+    if (parts.length === 2) {
+        const index = Number(parts[1]);
+
+        if (Number.isInteger(index)) {
+            return {
+                key: parts[0],
+                index
+            };
+        }
+    }
+
+    return {
+        key: type,
+        index: null
+    };
+}
+
+function applyCompiledCalibration(compiled, symbol, rawValue) {
+    if (rawValue === null || rawValue === undefined) {
+        return rawValue;
+    }
+
+    if (typeof rawValue === 'object') {
+        return rawValue;
+    }
+
+    return compiled.evaluate({
+        [symbol]: rawValue
+    });
+}
+
+async function applyCalibrations(database, guid, body) {
+    const calibratedBody = JSON.parse(JSON.stringify(body));
+
+    const calibrations = await database.collection('formulas').find({
+        guid,
+        type: 'calibration',
+        deleteRequested: { $ne: true }
+    }).toArray();
+
+    if (!calibrations.length) {
+        return calibratedBody;
+    }
+
+    console.log('[CALIBRATION] Active calibration count:', calibrations.length, 'guid:', guid);
+
+    for (const calibration of calibrations) {
+        try {
+            if (!calibration.formulaString || !Array.isArray(calibration.sensors)) {
+                continue;
+            }
+
+            const compiled = math.compile(calibration.formulaString);
+            
+            console.log('[CALIBRATION] Applying formula', {
+                guid,
+                formulaId: calibration._id?.toString(),
+                formulaString: calibration.formulaString,
+                sensors: calibration.sensors
+            });
+
+            for (const sensorConfig of calibration.sensors) {
+                const sensor = sensorConfig.sensor;
+                const type = sensorConfig.type;
+                const symbol = sensorConfig.symbol || 'x';
+
+                if (!calibratedBody.v || !Array.isArray(calibratedBody.v[sensor])) {
+                    continue;
+                }
+
+                const { key, index } = parseSensorType(type);
+
+                calibratedBody.v[sensor] = calibratedBody.v[sensor].map((entry) => {
+                    if (!entry || typeof entry !== 'object') {
+                        return entry;
+                    }
+
+                    if (entry[key] === undefined) {
+                        return entry;
+                    }
+
+                    const nextEntry = { ...entry };
+                    const rawValue = nextEntry[key];
+
+                    if (Array.isArray(rawValue)) {
+                        const nextArray = [...rawValue];
+
+                        if (index === null) {
+                            nextEntry[key] = nextArray.map((value) => {
+                                return applyCompiledCalibration(compiled, symbol, value);
+                            });
+                        } else if (index >= 0 && index < nextArray.length) {
+                            nextArray[index] = applyCompiledCalibration(
+                                compiled,
+                                symbol,
+                                nextArray[index]
+                            );
+
+                            nextEntry[key] = nextArray;
+                        }
+
+                        return nextEntry;
+                    }
+
+                    if (index !== null) {
+                        return entry;
+                    }
+
+                    nextEntry[key] = applyCompiledCalibration(compiled, symbol, rawValue);
+
+                    return nextEntry;
+                });
+            }
+        } catch (error) {
+            console.error('[CALIBRATION_FORWARDING_ERROR]', {
+                guid,
+                formulaId: calibration._id,
+                formulaString: calibration.formulaString,
+                error: error.message
+            });
+        }
+    }
+
+    return calibratedBody;
 }

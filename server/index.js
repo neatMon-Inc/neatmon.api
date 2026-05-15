@@ -77,6 +77,7 @@ const downloadLimit = rateLimit({
 /////   DATABASE CONNECTOR                          /////
 /////////////////////////////////////////////////////////
 const app = Express();
+app.set('trust proxy', true);
 const server = http.createServer({}, app).listen(5000, async () => {
     console.log("Connection: ", CONNECTION_URL)
     try {
