@@ -38,6 +38,8 @@ const REDIS_HOST = process.env.REDIS_HOST;
 const REDIS_PORT = process.env.REDIS_PORT;
 const REDIS_DB = process.env.REDIS_DB || 0;
 
+const REDIS_TLS = process.env.REDIS_TLS === 'true';
+
 const queue = new bull('data-queue', {
     redis: {
         host: REDIS_HOST,
@@ -45,7 +47,7 @@ const queue = new bull('data-queue', {
         db: REDIS_DB,
         username: REDIS_USERNAME,
         password: REDIS_PASSWORD,
-        tls: {}
+        tls: REDIS_TLS ? {} : undefined
     }
 });
 
