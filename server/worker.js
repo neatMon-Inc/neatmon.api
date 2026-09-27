@@ -19,7 +19,7 @@ const REDIS_PORT = process.env.REDIS_PORT;
 const REDIS_DB = process.env.REDIS_DB || 0;
 let database, collection;
 
-const REDIS_TLS = process.env.REDIS_TLS === 'true';
+const REDIS_TLS = process.env.REDIS_TLS !== 'false';
 
 const queue = new bull('data-queue', {
   redis: {
