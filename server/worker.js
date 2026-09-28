@@ -112,7 +112,7 @@ const queue = new bull(
             db: REDIS_DB,
             username: REDIS_USERNAME,
             password: REDIS_PASSWORD,
-            tls: {}
+            tls: REDIS_TLS ? {} : undefined
         }
     }
 );

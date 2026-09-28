@@ -35,8 +35,8 @@ services:
         restart: always
         command: "nodemon /usr/src/app/index.js"
         depends_on:
-            - "mongoDB"
-            - "redis"
+            - mongoDB
+            - redis
     worker:
         build: ./server
         env_file:
@@ -48,5 +48,6 @@ services:
         command: nodemon /usr/src/app/worker.js
     redis:
         image: redis:alpine
+        container_name: redis
         expose:
             - "6379"
