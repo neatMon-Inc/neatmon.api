@@ -38,6 +38,11 @@ const REDIS_HOST = process.env.REDIS_HOST;
 const REDIS_PORT = process.env.REDIS_PORT;
 const REDIS_DB = process.env.REDIS_DB || 0;
 
+<<<<<<< Updated upstream
+=======
+const REDIS_TLS = process.env.REDIS_TLS === 'true';
+
+>>>>>>> Stashed changes
 const queue = new bull('data-queue', {
     redis: {
         host: REDIS_HOST,
@@ -455,6 +460,9 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
                 console.log("Warning: Received command without a short_id");
             }
         }
+        else {
+            console.log("No command responses received in the request body");
+        }
 
         // Grab any controls that are available for device that have not been executed yet
         const controlList = await database.collection('controlQueue').find({ guid: doc.guid, executed: "" }).toArray();
@@ -468,10 +476,11 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
                 // create json object with array of controls
                 finalCommand.control = [];
                 controlList.forEach((ctrl) => {
-                    const shortId = ctrl.short_id;
+                    var shortId = ctrl.short_id;
                     if (!shortId) {
+                        shortId = ctrl._id.toString().slice(-5);
                         console.log("Warning: Control does not have a short_id");
-                        database.collection('controlQueue').updateOne({ _id: ctrl._id }, { $set: { short_id: ctrl._id.toString().slice(-5) } });
+                        database.collection('controlQueue').updateOne({ _id: ctrl._id }, { $set: { short_id: shortId } });
                     }
 
                     finalCommand.control.push({ id: ctrl.short_id, ...ctrl.control });
@@ -479,13 +488,14 @@ app.post("/api/device/:p_guid", downloadLimit, async (request, response) => {
             }
             if (cmd) {
                 console.log("\tCommand:\t" + JSON.stringify(cmd));
-                const shortId = cmd.short_id;
+                var shortId = cmd.short_id;
                 if (!shortId) {
+                    shortId = cmd._id.toString().slice(-5);
                     console.log("Warning: Command does not have a short_id");
-                    database.collection('commandQueue').updateOne({ _id: cmd._id }, { $set: { short_id: cmd._id.toString().slice(-5) } });
+                    database.collection('commandQueue').updateOne({ _id: cmd._id }, { $set: { short_id: shortId } });
                 }
 
-                finalCommand.id = cmd.short_id;
+                finalCommand.id = shortId;
                 if (cmd.command.fwu && Object.keys(cmd.command.fwu).length > 0)
                     finalCommand.fwu = cmd.command.fwu;
                 if (cmd.command.cfg && Object.keys(cmd.command.cfg).length > 0)

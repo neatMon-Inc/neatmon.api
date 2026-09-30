@@ -4,6 +4,7 @@ const { json } = require('express');
 const axios = require('axios');
 const ObjectId = require('bson').ObjectId
 const math = require('mathjs');
+<<<<<<< Updated upstream
 const MongoClient = require("mongodb").MongoClient;
 const FROM_NEATMON_IO = process.env.FROM_NEATMON_IO
 const CONNECTION_URL = process.env.MONGO_URL;
@@ -29,6 +30,94 @@ const queue = new bull('data-queue', {
     tls: {}
   }
 });
+=======
+const MongoClient = require('mongodb').MongoClient;
+
+const {
+    isDataSpikeFilterEnabled,
+    isValidCalibratedNumber,
+    createDataSpikeFilterState,
+    applyDataSpikeFilterValue
+} = require('./dataSpikeFilter');
+
+const {
+    ensureSpikeFilterStateIndexes,
+    loadSpikeFilterState,
+    saveSpikeFilterState,
+    resetSpikeFilterState
+} = require('./spikeFilterState');
+
+
+/**
+ * ============================================================
+ * ENVIRONMENT CONFIGURATION
+ * ============================================================
+ */
+
+const FROM_NEATMON_IO = process.env.FROM_NEATMON_IO;
+
+const CONNECTION_URL =
+    process.env.MONGO_URL;
+
+const DATABASE_NAME =
+    process.env.MONGO_DATABASE_NAME;
+
+const DATABASE_COLLECTION =
+    process.env.MONGO_DATABASE_COLLECTION_DATA;
+
+const DATABASE_CONFIG =
+    process.env.MONGO_DATABASE_COLLECTION_CONFIGURATION;
+
+const MONGO_DATABASE_EDITOR_USER =
+    process.env.MONGO_DATABASE_EDITOR_USER;
+
+const MONGO_DATABASE_EDITOR_PASSWORD =
+    process.env.MONGO_DATABASE_EDITOR_PASSWORD;
+
+const REDIS_USERNAME =
+    process.env.REDIS_USERNAME;
+
+const REDIS_PASSWORD =
+    process.env.REDIS_PASSWORD;
+
+const REDIS_HOST =
+    process.env.REDIS_HOST;
+
+const REDIS_PORT =
+    process.env.REDIS_PORT;
+
+const REDIS_DB =
+    process.env.REDIS_DB || 0;
+
+
+let database;
+let collection;
+let unit_configuration;
+
+
+/**
+ * ============================================================
+ * REDIS / BULL QUEUE
+ * ============================================================
+ */
+
+const REDIS_TLS = process.env.REDIS_TLS === 'true';
+
+const queue = new bull(
+    'data-queue',
+    {
+        redis: {
+            host: REDIS_HOST,
+            port: REDIS_PORT,
+            db: REDIS_DB,
+            username: REDIS_USERNAME,
+            password: REDIS_PASSWORD,
+            tls: REDIS_TLS ? {} : undefined
+        }
+    }
+);
+
+>>>>>>> Stashed changes
 
 queue.on('ready', () => {
   console.log(`Worker connected to Redis at ${REDIS_HOST}:${REDIS_PORT}, DB ${REDIS_DB}`);
